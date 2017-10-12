@@ -1,0 +1,21 @@
+{
+  "name": "backend-azure-blob-exporter",
+  "version": "0.1.0",
+  "description": "Exports blobs from azure backend.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://quatrodev.visualstudio.com/DefaultCollection/Copictures%20Platform/_git/Backend.AzureBlobExporter"
+  },
+  "keywords": [
+    "backend",
+    "azure",
+    "blob",
+    "exporter"
+  ],
+  "author": "QuatroDev (www.quatrodev.com)",
+  "license": "ISC"
+}
