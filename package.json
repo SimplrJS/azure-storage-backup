@@ -4,7 +4,11 @@
   "description": "Exports blobs from azure backend.",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "tsc -p .",
+    "tslint": "tslint --project . --config ./tslint.json",
+    "watch": "tsc -w",
+    "test": "tsc -p . --noEmit && npm run tslint",
+    "release": "npm run build && npm run tslint"
   },
   "repository": {
     "type": "git",
@@ -17,5 +21,13 @@
     "exporter"
   ],
   "author": "QuatroDev (www.quatrodev.com)",
-  "license": "ISC"
+  "license": "ISC",
+  "engine": "node >= 5.0.0",
+  "bin": {
+    "azure-blob-exporter": "./dist/cli.js"
+  },
+  "devDependencies": {
+    "tslint": "^5.7.0",
+    "typescript": "^2.5.3"
+  }
 }
