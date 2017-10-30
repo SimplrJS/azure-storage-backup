@@ -1,9 +1,24 @@
 import { BlobService, common } from "azure-storage";
-import { BlobDownloadDto } from "../contracts/blob-helpers-contracts";
+import { BlobDownloadDto, ServicePropertiesDto } from "../contracts/blob-helpers-contracts";
 import { Writable } from "stream";
 
 export function ConstructHost(storageAccount: string): string {
     return `https://${storageAccount}.blob.core.windows.net`;
+}
+
+export async function GetServiceProperties(blobService: BlobService, options: common.RequestOptions = {}): Promise<ServicePropertiesDto> {
+    return new Promise<ServicePropertiesDto>((resolve, reject) => {
+        blobService.getServiceProperties(options, (error, result, response) => {
+            if (error) {
+                reject(error);
+            } else {
+                resolve({
+                    Result: result,
+                    ServiceResponse: response
+                });
+            }
+        });
+    });
 }
 
 export async function GetContainersList(
@@ -61,7 +76,7 @@ export async function GetBlobToLocalFile(
                 reject(error);
             } else {
                 resolve({
-                    BlobResult: blobResult,
+                    Result: blobResult,
                     ServiceResponse: serviceResponse
                 });
             }
@@ -87,7 +102,7 @@ export async function GetBlobToStream(
                     reject(error);
                 } else {
                     resolve({
-                        BlobResult: blobResult,
+                        Result: blobResult,
                         ServiceResponse: serviceResponse
                     });
                 }
