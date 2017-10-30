@@ -8,7 +8,7 @@
     ],
     "outDir": "./dist",
     "rootDir": "./src",
-    "importHelpers": false,
+    "importHelpers": true,
     "noEmitHelpers": true,
     "downlevelIteration": true,
     "strict": true,
