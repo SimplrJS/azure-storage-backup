@@ -33,7 +33,9 @@
   "dependencies": {
     "@types/fs-extra": "^4.0.2",
     "@types/node": "^8.0.34",
+    "@types/yargs": "^8.0.2",
     "azure-storage": "^2.6.0",
-    "fs-extra": "^4.0.2"
+    "fs-extra": "^4.0.2",
+    "yargs": "^10.0.3"
   }
 }
