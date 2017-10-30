@@ -1,6 +1,10 @@
-import { BlobService, ServiceResponse } from "azure-storage";
+import { BlobService, ServiceResponse, common } from "azure-storage";
 
-export interface BlobDownloadDto {
-    BlobResult: BlobService.BlobResult;
+export type BlobDownloadDto = ResultDto<BlobService.BlobResult>;
+
+export type ServicePropertiesDto = ResultDto<common.models.ServicePropertiesResult.ServiceProperties>;
+
+export interface ResultDto<TResult> {
+    Result: TResult;
     ServiceResponse: ServiceResponse;
 }
