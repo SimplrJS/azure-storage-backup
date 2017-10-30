@@ -1,20 +1,14 @@
-import { BlobService, common } from "azure-storage";
+import { BlobService } from "azure-storage";
 import { GetBlobsList } from "../helpers/blob-helpers";
+import { BaseManager } from "../abstractions/base-manager";
 
-export class BlobManager {
-    constructor(private blobService: BlobService, private containerName: string, private options?: BlobService.ListContainerOptions) { }
-
-    private continuationToken: common.ContinuationToken | undefined;
-    private entries: BlobService.BlobResult[] = [];
-    private isInitialized: boolean = false;
-
-    public get HasNext(): boolean {
-        return Boolean(this.continuationToken);
-    }
-
-    public Clear(): void {
-        this.continuationToken = undefined;
-        this.entries = [];
+export class BlobManager extends BaseManager<BlobService.BlobResult> {
+    constructor(
+        protected blobService: BlobService,
+        protected containerName: string,
+        protected options?: BlobService.ListContainerOptions
+    ) {
+        super(blobService, options);
     }
 
     public Next(): Promise<BlobService.BlobResult[]> {
@@ -31,17 +25,5 @@ export class BlobManager {
         } else {
             return this.entries;
         }
-    }
-
-    public get Entries(): BlobService.BlobResult[] {
-        return this.entries;
-    }
-
-    public get ContinuationToken(): common.ContinuationToken | undefined {
-        return this.continuationToken;
-    }
-
-    public get IsFinished(): boolean {
-        return !this.HasNext;
     }
 }
