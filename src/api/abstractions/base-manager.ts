@@ -36,4 +36,12 @@ export abstract class BaseManager<TItemType> {
     public get IsInitialized(): boolean {
         return this.isInitialized;
     }
+
+    public async FetchAll(): Promise<TItemType[]> {
+        while (!this.IsInitialized || this.HasNext) {
+            await this.Next();
+        }
+
+        return this.entries;
+    }
 }
