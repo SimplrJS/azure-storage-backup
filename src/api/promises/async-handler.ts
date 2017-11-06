@@ -7,7 +7,7 @@ export class AsyncManager<T> {
     private availableStack: Array<AsyncGenerator<T>> = new Array(...this.asyncFunctions);
 
     private resolve: () => void;
-    private reject: () => void;
+    private reject: (error?: any) => void;
 
     public async Start(): Promise<void> {
         this.refillCurrentList();
@@ -17,6 +17,7 @@ export class AsyncManager<T> {
         });
     }
 
+    // TODO: fix rejecting to fail fast.
     private refillCurrentList(): void {
         for (let i = this.currentList.length; i < this.asyncFunctionsConcurrently; i++) {
             const promiseGenerator = this.availableStack.pop();
@@ -38,6 +39,7 @@ export class AsyncManager<T> {
                         }
                     } catch (error) {
                         reject(error);
+                        this.reject(error);
                     }
                 }));
             }
