@@ -71,7 +71,7 @@ export async function GetBlobToLocalFile(
     localFileName: string = path.join(process.cwd(), blobName),
     options: BlobService.GetBlobRequestOptions = {}
 ): Promise<BlobDownloadDto> {
-    return new Promise<BlobDownloadDto>(async (resolve, reject) => {
+    return new Promise<BlobDownloadDto>((resolve, reject) => {
         blobService.getBlobToLocalFile(containerName, blobName, localFileName, (error, blobResult, serviceResponse) => {
             if (error) {
                 reject(error);
