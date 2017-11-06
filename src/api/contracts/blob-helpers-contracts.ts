@@ -7,4 +7,5 @@ export type ServicePropertiesDto = ResultDto<common.models.ServicePropertiesResu
 export interface ResultDto<TResult> {
     Result: TResult;
     ServiceResponse: ServiceResponse;
+    LocalContentLength?: number;
 }
