@@ -24,7 +24,7 @@ export class CLIHandler {
 
     private async handleCLIAction(): Promise<void> {
         try {
-            this.checkServiceStatus();
+            await this.checkServiceStatus();
             Log(`Successfully connected to Azure account "${this.configData.storageAccount}"`);
 
             this.containerManager = new ContainerManager(this.blobService);
