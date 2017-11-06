@@ -109,7 +109,10 @@
       "double",
       "jsx-double"
     ],
-    // "no-console": [true, "log"],
+    "no-console": [
+      true,
+      "log"
+    ],
     "no-empty": true,
     "no-reference": true,
     "no-shadowed-variable": true,
