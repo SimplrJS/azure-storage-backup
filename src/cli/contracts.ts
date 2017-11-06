@@ -1,4 +1,5 @@
 import { StorageHost } from "azure-storage";
+import { BlobManager } from "../api/managers/blob-manager";
 
 export interface BasePackage {
     name: string;
@@ -11,10 +12,31 @@ export interface BasePackage {
 
 export interface CLIArgumentsObject {
     config?: string | boolean;
+    stats?: boolean;
+    sync?: boolean;
+    check?: boolean;
+    logDir?: string;
+    retryFailed?: boolean;
 }
 
 export interface ConfigData {
-    StorageAccount: string;
-    StorageAccessKey: string;
-    StorageHost?: StorageHost;
+    storageAccount: string;
+    storageAccessKey: string;
+    storageHost?: StorageHost;
+    verbose?: boolean;
+    outDir?: string;
+    retriesCount?: number;
+}
+
+export interface BasePackage {
+    name: string;
+    version: string;
+    description?: string;
+    main: string;
+    author?: string;
+    license?: string;
+}
+
+export interface ContainersBlobs {
+    [key: string]: BlobManager;
 }
