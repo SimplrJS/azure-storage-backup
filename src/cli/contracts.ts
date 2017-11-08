@@ -42,6 +42,7 @@ export interface ContainersBlobs {
 }
 
 export interface LocalFileDto {
-    name: string;
+    fullPath: string;
+    blobName: string;
     size: number;
 }

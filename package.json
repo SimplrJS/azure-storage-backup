@@ -27,6 +27,7 @@
     "azure-blob-exporter": "./dist/cli.js"
   },
   "devDependencies": {
+    "@types/globby": "^6.1.0",
     "tslint": "^5.7.0",
     "typescript": "^2.6.1"
   },
@@ -36,6 +37,7 @@
     "@types/yargs": "^8.0.2",
     "azure-storage": "^2.6.0",
     "fs-extra": "^4.0.2",
+    "globby": "^6.1.0",
     "yargs": "^10.0.3"
   }
 }

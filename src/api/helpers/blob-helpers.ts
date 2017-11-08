@@ -1,8 +1,15 @@
 import * as path from "path";
 import { BlobService, common } from "azure-storage";
 import { Writable } from "stream";
+import * as globby from "globby";
+import { IOptions } from "glob";
+import * as fs from "fs-extra";
 import { BlobDownloadDto, ServicePropertiesDto } from "../contracts/blob-helpers-contracts";
-import { LocalFileDto } from "src/cli/contracts";
+import { LocalFileDto } from "../../cli/contracts";
+import { AsyncManager, AsyncGenerator } from "../promises/async-handler";
+
+export const BLOB_NAME_SEPARATOR: string = "/";
+export const GLOBBY_SEPARATOR: string = "/";
 
 export function ConstructHost(storageAccount: string): string {
     return `https://${storageAccount}.blob.core.windows.net`;
@@ -114,11 +121,7 @@ export async function GetBlobToStream(
     });
 }
 
-export function GetMissingBlobs(
-    blobList: BlobService.BlobResult[],
-    localDownloadedList: LocalFileDto[],
-    checkFileSize: boolean = true
-): string[] {
+export function GetMissingBlobs(blobList: BlobService.BlobResult[], localDownloadedList: LocalFileDto[]): string[] {
     if (localDownloadedList.length <= 0) {
         return blobList.map(x => x.name);
     }
@@ -127,24 +130,52 @@ export function GetMissingBlobs(
     for (let i = 0; i < blobList.length; i++) {
         const blob = blobList[i];
         // Blob not exists in local file list
-        const localFileIndex = localDownloadedList.findIndex(x => x.name === blob.name);
+        const localFileIndex = localDownloadedList.findIndex(x => x.blobName === blob.name);
         if (localFileIndex === -1) {
             newItems.push(blob.name);
         } else {
-            if (checkFileSize) {
-                // Blob size not the same as downloaded local file
-                const localFile = localDownloadedList[localFileIndex];
-                const blobContentLength = Number(blob.contentLength);
-                if (!isFinite(blobContentLength)) {
-                    console.warn(`${blob.name} 'contentLength': ${blob.contentLength} is not a number`);
-                    continue;
-                }
-                if (localFile.size !== blobContentLength) {
-                    newItems.push(blob.name);
-                }
+            // Blob size not the same as downloaded local file
+            const localFile = localDownloadedList[localFileIndex];
+            const blobContentLength = Number(blob.contentLength);
+            if (!isFinite(blobContentLength)) {
+                console.warn(`${blob.name} 'contentLength': ${blob.contentLength} is not a number`);
+                continue;
+            }
+            if (localFile.size !== blobContentLength) {
+                newItems.push(blob.name);
             }
         }
     }
 
     return newItems;
+}
+
+export async function GetLocalFiles(sourcePath: string, patterns: string[] = ["**/*"]): Promise<LocalFileDto[]> {
+    const options: IOptions = {
+        cwd: sourcePath,
+        nodir: true
+    };
+    const localFiles = await globby(patterns, options);
+
+    const asyncFunctionArray = new Array<AsyncGenerator<LocalFileDto>>();
+    const result = new Array<LocalFileDto>();
+    for (let i = 0; i < localFiles.length; i++) {
+        const localFile = localFiles[i];
+        asyncFunctionArray.push(async () => {
+            const fullPath = path.join(sourcePath, localFile);
+            const stats = await fs.stat(fullPath);
+            const localFileDto: LocalFileDto = {
+                fullPath: fullPath,
+                blobName: localFile,
+                size: stats.size
+            };
+            result.push(localFileDto);
+            return localFileDto;
+        });
+
+    }
+    const asyncManager = new AsyncManager<LocalFileDto>(asyncFunctionArray, 5);
+    await asyncManager.Start();
+
+    return result;
 }
