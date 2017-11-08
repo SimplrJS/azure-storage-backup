@@ -40,3 +40,8 @@ export interface BasePackage {
 export interface ContainersBlobs {
     [key: string]: BlobManager;
 }
+
+export interface LocalFileDto {
+    name: string;
+    size: number;
+}
