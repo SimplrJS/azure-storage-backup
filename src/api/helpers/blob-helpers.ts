@@ -1,12 +1,12 @@
 import * as path from "path";
+import * as globby from "globby";
+import * as fs from "fs-extra";
 import { BlobService, common } from "azure-storage";
 import { Writable } from "stream";
-import * as globby from "globby";
 import { IOptions } from "glob";
-import * as fs from "fs-extra";
 import { BlobDownloadDto, ServicePropertiesDto } from "../contracts/blob-helpers-contracts";
-import { LocalFileDto } from "../../cli/contracts";
 import { AsyncManager, AsyncGenerator } from "../promises/async-handler";
+import { LocalFileDto } from "../../cli/contracts";
 
 export const BLOB_NAME_SEPARATOR: string = "/";
 export const GLOBBY_SEPARATOR: string = "/";
