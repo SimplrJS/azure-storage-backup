@@ -175,7 +175,7 @@ export async function GetLocalFiles(sourcePath: string, patterns: string[] = ["*
         });
 
     }
-    const asyncManager = new AsyncManager<LocalFileDto>(asyncFunctionArray, 5);
+    const asyncManager = new AsyncManager<LocalFileDto>(asyncFunctionArray);
     await asyncManager.Start();
 
     return result;
