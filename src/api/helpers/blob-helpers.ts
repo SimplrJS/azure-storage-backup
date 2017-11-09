@@ -153,7 +153,8 @@ export function GetMissingBlobs(blobList: BlobService.BlobResult[], localDownloa
 export async function GetLocalFiles(sourcePath: string, patterns: string[] = ["**/*"]): Promise<LocalFileDto[]> {
     const options: IOptions = {
         cwd: sourcePath,
-        nodir: true
+        nodir: true,
+        nosort: true
     };
     const localFiles = await globby(patterns, options);
 
