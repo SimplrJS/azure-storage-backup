@@ -2,6 +2,7 @@ import * as fs from "fs-extra";
 import * as path from "path";
 import { BasePackage, CLIArgumentsObject } from "src/cli/contracts";
 import * as yargs from "yargs";
+import * as Init from "./commands-modules/init";
 
 const PACKAGE_JSON_PATH = "../../package.json";
 
@@ -43,6 +44,7 @@ export const CLIArguments = yargs
         describe: "Retrieves statistics of a Storage account or a container",
         type: "boolean"
     })
+    .command(Init)
     .argv as CLIArgumentsObject;
 
 export const DEFAULT_CLI_ARGUMENTS = {
