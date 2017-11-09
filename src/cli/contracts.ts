@@ -1,3 +1,4 @@
+import * as fs from "fs";
 import { StorageHost } from "azure-storage";
 import { BlobManager } from "../api/managers/blob-manager";
 
@@ -41,8 +42,6 @@ export interface ContainersBlobs {
     [key: string]: BlobManager;
 }
 
-export interface LocalFileDto {
-    fullPath: string;
-    blobName: string;
-    size: number;
+export interface LocalFileDto extends fs.Stats {
+    path: string;
 }

@@ -1,15 +1,9 @@
 import * as path from "path";
-import * as globby from "globby";
-import * as fs from "fs-extra";
+import fastGlob, { IOptions } from "fast-glob";
 import { BlobService, common } from "azure-storage";
 import { Writable } from "stream";
-import { IOptions } from "glob";
 import { BlobDownloadDto, ServicePropertiesDto } from "../contracts/blob-helpers-contracts";
-import { AsyncManager, AsyncGenerator } from "../promises/async-handler";
 import { LocalFileDto } from "../../cli/contracts";
-
-export const BLOB_NAME_SEPARATOR: string = "/";
-export const GLOBBY_SEPARATOR: string = "/";
 
 export function ConstructHost(storageAccount: string): string {
     return `https://${storageAccount}.blob.core.windows.net`;
@@ -130,18 +124,20 @@ export function GetMissingBlobs(blobList: BlobService.BlobResult[], localDownloa
     for (let i = 0; i < blobList.length; i++) {
         const blob = blobList[i];
         // Blob not exists in local file list
-        const localFileIndex = localDownloadedList.findIndex(x => x.blobName === blob.name);
+        const localFileIndex = localDownloadedList.findIndex(x => x.path === blob.name);
         if (localFileIndex === -1) {
             newItems.push(blob.name);
         } else {
             // Blob size not the same as downloaded local file
-            const localFile = localDownloadedList[localFileIndex];
+            const localFilePath = localDownloadedList[localFileIndex];
             const blobContentLength = Number(blob.contentLength);
+
             if (!isFinite(blobContentLength)) {
-                console.warn(`${blob.name} 'contentLength': ${blob.contentLength} is not a number`);
+                console.warn(`"${blob.name}" 'contentLength': ${blob.contentLength} is not a finite number.`);
                 continue;
             }
-            if (localFile.size !== blobContentLength) {
+
+            if (localFilePath.size !== blobContentLength) {
                 newItems.push(blob.name);
             }
         }
@@ -150,33 +146,12 @@ export function GetMissingBlobs(blobList: BlobService.BlobResult[], localDownloa
     return newItems;
 }
 
-export async function GetLocalFiles(sourcePath: string, patterns: string[] = ["**/*"]): Promise<LocalFileDto[]> {
+export async function GetLocalFiles(containerSourcePath: string, pattern: string[] = ["**/*"]): Promise<LocalFileDto[]> {
     const options: IOptions = {
-        cwd: sourcePath,
-        nodir: true,
-        nosort: true
+        cwd: containerSourcePath,
+        stats: true,
+        onlyFiles: true
     };
-    const localFiles = await globby(patterns, options);
 
-    const asyncFunctionArray = new Array<AsyncGenerator<LocalFileDto>>();
-    const result = new Array<LocalFileDto>();
-    for (let i = 0; i < localFiles.length; i++) {
-        const localFile = localFiles[i];
-        asyncFunctionArray.push(async () => {
-            const fullPath = path.join(sourcePath, localFile);
-            const stats = await fs.stat(fullPath);
-            const localFileDto: LocalFileDto = {
-                fullPath: fullPath,
-                blobName: localFile,
-                size: stats.size
-            };
-            result.push(localFileDto);
-            return localFileDto;
-        });
-
-    }
-    const asyncManager = new AsyncManager<LocalFileDto>(asyncFunctionArray);
-    await asyncManager.Start();
-
-    return result;
+    return await fastGlob(pattern, options);
 }
