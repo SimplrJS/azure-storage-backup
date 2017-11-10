@@ -15,7 +15,7 @@ class ConfigInitializationCommandClass implements CommandModule {
     public describe: string = "Run configuration prompts.";
 
     private requireNotEmpty = (value: string) => {
-        if (value !== "") {
+        if (value.length !== 0) {
             return true;
         }
         return "Value is empty.";
