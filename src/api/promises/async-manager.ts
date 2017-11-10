@@ -79,7 +79,7 @@ export class AsyncManager<TData, TResult = void> {
         return this.hasFailed;
     }
 
-    public Reset(): void {
+    private reset(): void {
         this.isStarted = false;
         this.hasFailed = false;
         this.pointerPosition = 0;
@@ -94,7 +94,7 @@ export class AsyncManager<TData, TResult = void> {
             throw new Error(`Cannot start AsyncManager in the middle of process.`);
         }
 
-        this.Reset();
+        this.reset();
         this.isStarted = true;
 
         this.promisesData = promisesData.map<PromiseDto<TData, TResult | undefined>>(promiseData => ({
