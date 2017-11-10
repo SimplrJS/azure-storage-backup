@@ -27,12 +27,12 @@
     "azure-blob-exporter": "./dist/cli.js"
   },
   "devDependencies": {
-    "@types/inquirer": "0.0.35",
     "tslint": "^5.7.0",
     "typescript": "^2.6.1"
   },
   "dependencies": {
     "@types/fs-extra": "^4.0.2",
+    "@types/inquirer": "0.0.35",
     "@types/node": "^8.0.34",
     "@types/yargs": "^8.0.2",
     "azure-storage": "^2.6.0",
