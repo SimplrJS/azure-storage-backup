@@ -1,8 +1,6 @@
 import { StorageHost } from "azure-storage";
 import { BlobManager } from "../api/managers/blob-manager";
 
-export type CommandHandler<T = any> = (args: T) => void;
-
 export interface BasePackage {
     name: string;
     version: string;
