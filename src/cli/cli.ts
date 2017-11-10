@@ -1,5 +1,39 @@
 #!/usr/bin/env node
-import { CLIArguments } from "./cli-arguments";
-import { CLIHandler } from "./cli-handler";
+import { CLIArgumentsObject } from "src/cli/cli-contracts";
+import * as yargs from "yargs";
 
-new CLIHandler(CLIArguments);
+import { StatisticsCommand } from "./command-modules/stats";
+import { SynchronizationCommand } from "./command-modules/sync";
+import { CheckWithAzureCommand } from "./command-modules/check";
+import { ConfigInitializationCommand } from "./command-modules/init";
+import { GetVersion } from "./cli-helpers";
+
+export const CLIArguments = yargs
+    .help("h", "Show help")
+    .alias("h", "help")
+    .version(`Current version: ${GetVersion()}`)
+    .alias("v", "version")
+    // CLI options
+    .option("config", {
+        describe: "Relative path from current working directory to config file.",
+        type: "string"
+    })
+    .option("container", {
+        describe: "Performs an action on a specific container instead of all Azure storage account.",
+        type: "string"
+    })
+    .option("noCache", {
+        describe: "Prevents using cached values from previously performed actions.",
+        type: "boolean"
+    })
+    .option("logPath", {
+        describe: "Relative path from current working directory to log file.",
+        type: "string"
+    })
+
+    // CLI commands:
+    .command(SynchronizationCommand)
+    .command(CheckWithAzureCommand)
+    .command(StatisticsCommand)
+    .command(ConfigInitializationCommand)
+    .argv as CLIArgumentsObject;
