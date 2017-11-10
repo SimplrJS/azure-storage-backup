@@ -1,7 +1,9 @@
 import * as path from "path";
+import fastGlob, { IOptions } from "fast-glob";
 import { BlobService, common } from "azure-storage";
 import { Writable } from "stream";
 import { BlobDownloadDto, ServicePropertiesDto } from "../contracts/blob-helpers-contracts";
+import { LocalFileDto } from "../../cli/contracts";
 
 export function ConstructHost(storageAccount: string): string {
     return `https://${storageAccount}.blob.core.windows.net`;
@@ -111,4 +113,45 @@ export async function GetBlobToStream(
                 }
             });
     });
+}
+
+export function GetMissingBlobs(blobsList: BlobService.BlobResult[], localDownloadedList: LocalFileDto[]): string[] {
+    if (localDownloadedList.length <= 0) {
+        return blobsList.map(x => x.name);
+    }
+
+    const newItems: string[] = new Array<string>();
+    for (let i = 0; i < blobsList.length; i++) {
+        const blob = blobsList[i];
+        const localFileIndex = localDownloadedList.findIndex(x => x.path === blob.name);
+        // Blob not exists in local file list
+        if (localFileIndex === -1) {
+            newItems.push(blob.name);
+        } else {
+            // Blob size not the same as downloaded local file
+            const localFilePath = localDownloadedList[localFileIndex];
+            const blobContentLength = Number(blob.contentLength);
+
+            if (!isFinite(blobContentLength)) {
+                console.warn(`"${blob.name}" 'contentLength': ${blob.contentLength} is not a finite number.`);
+                continue;
+            }
+
+            if (localFilePath.size !== blobContentLength) {
+                newItems.push(blob.name);
+            }
+        }
+    }
+
+    return newItems;
+}
+
+export async function GetLocalFiles(containerSourcePath: string, pattern: string[] = ["**/*"]): Promise<LocalFileDto[]> {
+    const options: IOptions = {
+        cwd: containerSourcePath,
+        stats: true,
+        onlyFiles: true
+    };
+
+    return await fastGlob(pattern, options);
 }
