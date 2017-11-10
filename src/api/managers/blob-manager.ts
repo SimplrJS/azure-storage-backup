@@ -11,8 +11,12 @@ export class BlobManager extends BaseManager<BlobService.BlobResult> {
         super(blobService, options);
     }
 
-    public Next(): Promise<BlobService.BlobResult[]> {
+    public async Next(): Promise<BlobService.BlobResult[]> {
         return this.getBlobsList();
+    }
+
+    public get ContainerName(): string {
+        return this.containerName;
     }
 
     private async getBlobsList(): Promise<BlobService.BlobResult[]> {
