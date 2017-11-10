@@ -9,13 +9,17 @@ export enum ConnectionType {
     ConnectionString = "connectionString"
 }
 
+export interface AzureStorageAnswersDto extends ConfigData {
+    configPath: string;
+}
+
 class ConfigInitializationCommandClass implements CommandModule {
     public command: string = "init";
 
     public describe: string = "Run configuration prompts.";
 
     private requireNotEmpty = (value: string) => {
-        if (value.length !== 0) {
+        if (value.trim().length !== 0) {
             return true;
         }
         return "Value is empty.";
@@ -50,7 +54,8 @@ class ConfigInitializationCommandClass implements CommandModule {
                 type: "input",
                 name: "outDir",
                 default: process.cwd(),
-                message: "Save downloaded files to directory:"
+                message: "Save downloaded files to directory:",
+                validate: this.requireNotEmpty
             },
             {
                 type: "input",
@@ -62,23 +67,16 @@ class ConfigInitializationCommandClass implements CommandModule {
                 type: "input",
                 name: "configPath",
                 default: process.cwd(),
-                message: "Save config file to directory:"
+                message: "Save config file to directory:",
+                validate: this.requireNotEmpty
             }
         ];
+
         const azureStorageAnswers = await prompt(azureStorageQuestions);
+        const { configPath, ...config } = azureStorageAnswers as AzureStorageAnswersDto;
+        config.storageHost = azureStorageAnswers.storageHost || undefined;
 
-        const config: ConfigData = {
-            storageAccount: azureStorageAnswers.storageAccount,
-            storageAccessKey: azureStorageAnswers.storageAccessKey,
-            storageHost: azureStorageAnswers.storageHost || undefined,
-            verbose: azureStorageAnswers.verbose,
-            outDir: azureStorageAnswers.outDir || process.cwd(),
-            retriesCount: azureStorageAnswers.retriesCount
-        };
-
-        const configPath: string = azureStorageAnswers.configPath;
-        const resolvedConfigPath: string = configPath.trim() || process.cwd();
-        const outputPath = path.join(resolvedConfigPath, "exporter.config.json");
+        const outputPath = path.join(configPath, "exporter.config.json");
 
         try {
             await writeJSON(outputPath, config);
