@@ -115,16 +115,16 @@ export async function GetBlobToStream(
     });
 }
 
-export function GetMissingBlobs(blobList: BlobService.BlobResult[], localDownloadedList: LocalFileDto[]): string[] {
+export function GetMissingBlobs(blobsList: BlobService.BlobResult[], localDownloadedList: LocalFileDto[]): string[] {
     if (localDownloadedList.length <= 0) {
-        return blobList.map(x => x.name);
+        return blobsList.map(x => x.name);
     }
 
     const newItems: string[] = new Array<string>();
-    for (let i = 0; i < blobList.length; i++) {
-        const blob = blobList[i];
-        // Blob not exists in local file list
+    for (let i = 0; i < blobsList.length; i++) {
+        const blob = blobsList[i];
         const localFileIndex = localDownloadedList.findIndex(x => x.path === blob.name);
+        // Blob not exists in local file list
         if (localFileIndex === -1) {
             newItems.push(blob.name);
         } else {
