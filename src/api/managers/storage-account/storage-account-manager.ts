@@ -8,7 +8,7 @@ import { ContainerManager } from "../container-manager";
 import { BlobManager } from "../blob-manager";
 import { AsyncManager, PromiseHandler } from "../../promises/async-manager";
 
-import { PACKAGE_JSON } from "../../helpers/app-helpers";
+import { PACKAGE_JSON } from "../../../cli/cli-helpers";
 import { GetServiceProperties } from "../../helpers/blob-helpers";
 
 export class StorageAccountManager {

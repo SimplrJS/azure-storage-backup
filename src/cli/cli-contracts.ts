@@ -20,3 +20,12 @@ export interface CLIArgumentsObject extends Arguments {
 export interface LocalFileDto extends fs.Stats {
     path: string;
 }
+
+export interface BasePackage {
+    name: string;
+    version: string;
+    description?: string;
+    main: string;
+    author?: string;
+    license?: string;
+}

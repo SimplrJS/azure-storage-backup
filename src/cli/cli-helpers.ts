@@ -3,14 +3,15 @@ import * as path from "path";
 import { EOL } from "os";
 import { Logger } from "azure-storage";
 
-import { BasePackage } from "../api/contracts/app-contracts";
+import { BasePackage } from "./cli-contracts";
 import { ConfigData } from "../api/managers/storage-account/storage-account-contracts";
 
 const PACKAGE_JSON_PATH = "../../package.json";
 
+export const PACKAGE_JSON = fs.readJSONSync(path.join(__dirname, PACKAGE_JSON_PATH)) as BasePackage;
+
 export function GetVersion(): string {
-    const packageData = fs.readJsonSync(path.join(__dirname, PACKAGE_JSON_PATH)) as BasePackage;
-    return packageData.version;
+    return PACKAGE_JSON.version;
 }
 
 export const DEFAULT_LOGGER = new Logger(Logger.LogLevels.INFO);
