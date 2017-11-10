@@ -1,3 +1,4 @@
+import * as fs from "fs";
 import { Arguments } from "yargs";
 
 export interface BasePackage {
@@ -14,4 +15,8 @@ export interface CLIArgumentsObject extends Arguments {
     logPath?: string;
     container?: string | boolean;
     noCache?: boolean;
+}
+
+export interface LocalFileDto extends fs.Stats {
+    path: string;
 }
