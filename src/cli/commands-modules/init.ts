@@ -2,10 +2,16 @@
 // File structure is restricted by requirements of Yargs Module:
 //      https://github.com/yargs/yargs/blob/master/docs/advanced.md#providing-a-command-module
 
+import * as path from "path";
+import { prompt, Questions } from "inquirer";
 import { CommandBuilder } from "yargs";
-// import * as inquirer from "inquirer";
-import { Questions, prompt } from "inquirer";
-import { CommandHandler } from "../contracts";
+import { writeJSON } from "fs-extra";
+import { CommandHandler, ConfigData } from "../contracts";
+
+export enum ConnectionType {
+    AccountNameAndKey = "accountNameAndKey",
+    ConnectionString = "connectionString"
+}
 
 export const command: string = "init";
 
@@ -13,23 +19,76 @@ export const describe: string = "Run configuration prompts.";
 
 export const builder: CommandBuilder = {};
 
+export const requireNotEmpty = (value: string) => {
+    if (value !== "") {
+        return true;
+    }
+    return "Value is empty.";
+};
+
 export const handler: CommandHandler = async () => {
-    const questions: Questions = [
+    const azureStorageQuestions: Questions = [
         {
             type: "input",
-            name: "first_name",
-            message: "What's your first name"
+            name: "storageAccount",
+            message: "Storage Account name:",
+            validate: requireNotEmpty
         },
         {
             type: "input",
-            name: "last_name",
-            message: "What's your last name",
-            default: "Doe"
+            name: "storageAccessKey",
+            message: "Storage Account key:",
+            validate: requireNotEmpty
+        },
+        {
+            type: "input",
+            name: "storageHost",
+            message: "Storage host address (optional):"
+        },
+        {
+            type: "confirm",
+            name: "verbose",
+            default: false,
+            message: "Verbose:"
+        },
+        {
+            type: "input",
+            name: "outDir",
+            default: process.cwd(),
+            message: "Save downloaded files to directory:"
+        },
+        {
+            type: "input",
+            name: "retriesCount",
+            default: 5,
+            message: "Retries count:"
+        },
+        {
+            type: "input",
+            name: "configPath",
+            default: process.cwd(),
+            message: "Save config file to directory:"
         }
     ];
+    const azureStorageAnswers = await prompt(azureStorageQuestions);
 
-    const answers = await prompt(questions);
+    const config: ConfigData = {
+        storageAccount: azureStorageAnswers.storageAccount,
+        storageAccessKey: azureStorageAnswers.storageAccessKey,
+        storageHost: azureStorageAnswers.storageHost || undefined,
+        verbose: azureStorageAnswers.verbose,
+        outDir: azureStorageAnswers.outDir || process.cwd(),
+        retriesCount: azureStorageAnswers.retriesCount
+    };
 
-    console.log(answers);
+    const configPath: string = azureStorageAnswers.configPath;
+    const resolvedConfigPath: string = configPath.trim() || process.cwd();
+    const outputPath = path.join(resolvedConfigPath, "exporter.config.json");
 
+    try {
+        await writeJSON(outputPath, config);
+        console.log("Successfully saved config to:", outputPath);
+    } catch (error) {
+        console.error(error);
+    }
 };
