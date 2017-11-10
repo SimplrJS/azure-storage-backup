@@ -3,7 +3,7 @@ import fastGlob, { IOptions } from "fast-glob";
 import { BlobService, common } from "azure-storage";
 import { Writable } from "stream";
 import { BlobDownloadDto, ServicePropertiesDto } from "../contracts/blob-helpers-contracts";
-import { LocalFileDto } from "../../cli/contracts";
+import { LocalFileDto } from "../../cli/cli-contracts";
 
 export function ConstructHost(storageAccount: string): string {
     return `https://${storageAccount}.blob.core.windows.net`;

@@ -2,10 +2,10 @@
 import { CLIArgumentsObject } from "src/cli/cli-contracts";
 import * as yargs from "yargs";
 
-import { StatisticsCommand } from "./command-modules/stats";
-import { SynchronizationCommand } from "./command-modules/sync";
-import { CheckWithAzureCommand } from "./command-modules/check";
-import { ConfigInitializationCommand } from "./command-modules/init";
+import { StatisticsCommand } from "./commands-modules/stats";
+import { SynchronizationCommand } from "./commands-modules/sync";
+import { CheckWithAzureCommand } from "./commands-modules/check";
+import { ConfigInitializationCommand } from "./commands-modules/init";
 import { GetVersion } from "./cli-helpers";
 
 export const CLIArguments = yargs

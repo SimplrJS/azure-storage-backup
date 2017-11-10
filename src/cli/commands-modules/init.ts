@@ -2,7 +2,8 @@ import * as path from "path";
 import { prompt, Questions } from "inquirer";
 import { CommandModule } from "yargs";
 import { writeJSON } from "fs-extra";
-import { ConfigData, CLIArgumentsObject } from "../contracts";
+import { CLIArgumentsObject } from "../cli-contracts";
+import { ConfigData } from "../../api/managers/storage-account/storage-account-contracts";
 
 export enum ConnectionType {
     AccountNameAndKey = "accountNameAndKey",
