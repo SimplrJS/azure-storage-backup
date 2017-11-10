@@ -19,10 +19,14 @@ export abstract class BaseManager<TItemType> {
         this.entries = [];
     }
 
-    public abstract Next(): Promise<TItemType[]>;
+    public abstract async Next(): Promise<TItemType[]>;
 
     public get Entries(): TItemType[] {
         return this.entries;
+    }
+
+    public get Count(): number {
+        return this.entries.length;
     }
 
     public get ContinuationToken(): common.ContinuationToken | undefined {
