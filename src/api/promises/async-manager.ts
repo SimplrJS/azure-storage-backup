@@ -9,6 +9,11 @@ export interface PromiseDto<TData, TResult> {
     Result: TResult;
 }
 
+export interface ResultDto<TData, TResult> {
+    Succeeded: Array<PromiseDto<TData, TResult>>;
+    Failed: Array<PromiseDto<TData, undefined>>;
+}
+
 export enum PromiseStatus {
     Init = 0,
     Failed = 16,
@@ -19,8 +24,8 @@ export class AsyncManager<TData, TResult = void> {
     constructor(
         private handler: PromiseHandler<TData, TResult>,
         private promisesConcurrently: number = 30,
-        private retriesCount: number = 3,
-        private failFast: boolean = false
+        private maxRetries: number = 3,
+        private throwOnError: boolean = false
     ) { }
 
     public get TotalCount(): number {
@@ -53,7 +58,7 @@ export class AsyncManager<TData, TResult = void> {
 
     private onSinglePromiseFinished: PromiseNotifier | undefined;
 
-    private resolve: (value?: TResult[] | PromiseLike<TResult[]> | undefined) => void;
+    private resolve: (value?: ResultDto<TData, TResult> | PromiseLike<ResultDto<TData, TResult>> | undefined) => void;
     private reject: (error?: any) => void;
 
     private pointerPosition: number = 0;
@@ -64,17 +69,34 @@ export class AsyncManager<TData, TResult = void> {
     private failedPromiseIndexes: number[] = [];
 
     private isStarted: boolean = false;
+    private hasFailed: boolean = false;
 
     public get IsStarted(): boolean {
         return this.isStarted;
     }
 
-    public async Start(promisesData: TData[], retriesCount = 3): Promise<TResult[]> {
+    public get HasFailed(): boolean {
+        return this.hasFailed;
+    }
+
+    public Reset(): void {
+        this.isStarted = false;
+        this.hasFailed = false;
+        this.pointerPosition = 0;
+        this.activePromises = 0;
+        this.failedPromiseIndexes = [];
+        this.succeededPromiseIndexes = [];
+        this.promisesData = [];
+    }
+
+    public async Start(promisesData: TData[], retriesCount = 3): Promise<ResultDto<TData, TResult>> {
         if (this.isStarted) {
             throw new Error(`Cannot start AsyncManager in the middle of process.`);
         }
 
+        this.Reset();
         this.isStarted = true;
+
         this.promisesData = promisesData.map<PromiseDto<TData, TResult | undefined>>(promiseData => ({
             Status: PromiseStatus.Init,
             Data: promiseData,
@@ -84,7 +106,7 @@ export class AsyncManager<TData, TResult = void> {
 
         this.activatePromises();
 
-        return new Promise<TResult[]>((resolve, reject) => {
+        return new Promise<ResultDto<TData, TResult>>((resolve, reject) => {
             this.resolve = resolve;
             this.reject = reject;
         });
@@ -93,9 +115,14 @@ export class AsyncManager<TData, TResult = void> {
     private activatePromises(): void {
         if (this.FinishedCount === this.promisesData.length) {
             // this.promiseData[index].Result will always defined, because we know, that this index has finished.
-            const results = this.succeededPromiseIndexes.map((index: number) => this.promisesData[index].Result!);
+            const results: ResultDto<TData, TResult> = {
+                Succeeded: this.SucceededPromises,
+                Failed: this.FailedPromises
+            };
+
             this.resolve(results);
             this.isStarted = false;
+            return;
         }
 
         for (let i = this.activePromises; i < this.promisesConcurrently && this.pointerPosition < this.TotalCount; ++i) {
@@ -111,6 +138,11 @@ export class AsyncManager<TData, TResult = void> {
         try {
             const result = await this.handler(data.Data);
 
+            // If manager failed while awaiting this promise, don't resolve it's value.
+            if (this.hasFailed) {
+                return;
+            }
+
             this.promisesData[index].Result = result;
             this.succeededPromiseIndexes.push(index);
 
@@ -121,7 +153,12 @@ export class AsyncManager<TData, TResult = void> {
             this.activePromises--;
             this.activatePromises();
         } catch (error) {
-            if (this.failFast) {
+            // If manager failed while awaiting this promise, don't retry it.
+            if (this.hasFailed) {
+                return;
+            }
+
+            if (this.throwOnError) {
                 this.reject(error);
                 this.isStarted = false;
 
@@ -129,7 +166,7 @@ export class AsyncManager<TData, TResult = void> {
                 this.pointerPosition = this.promisesData.length - 1;
             } else {
                 // Attempting to retry failed promise.
-                if (this.promisesData[index].RetriesCount < this.retriesCount) {
+                if (this.promisesData[index].RetriesCount < this.maxRetries) {
                     this.promisesData[index].RetriesCount++;
                     this.handlePromise(index);
                 } else {

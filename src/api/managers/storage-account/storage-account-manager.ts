@@ -27,6 +27,7 @@ export class StorageAccountManager {
             this.logger.notice(`Successfully connected to storage account "${this.config.storageAccount}".`);
         } catch (error) {
             this.logger.critical(`Failed to connect to storage account "${this.config.storageAccount}".`);
+            throw error;
         }
     }
 
