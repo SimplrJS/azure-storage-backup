@@ -9,6 +9,8 @@ class SynchronizationCommandClass implements CommandModule {
 
     public handler = async (options: CLIArgumentsObject) => {
         console.info("Command sync.");
+
+        // TODO: cache 'check-list.json' in RAM and delete file, than download 'check-list' files.
     }
 }
 
