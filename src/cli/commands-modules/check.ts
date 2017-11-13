@@ -18,13 +18,13 @@ class CheckWithAzureCommandClass implements CommandModule {
             await storageAccountManager.CheckServiceStatus();
 
             if (IsContainerNameValid(options.container)) {
-                await storageAccountManager.CheckedContainer(options.container);
+                await storageAccountManager.ValidateContainerFiles(options.container);
             } else {
                 // Get blob container list, and check one by one.
                 const containers = await storageAccountManager.FetchAllContainers();
 
                 for (let i = 0; i < containers.length; i++) {
-                    await storageAccountManager.CheckedContainer(containers[i].name);
+                    await storageAccountManager.ValidateContainerFiles(containers[i].name);
                 }
             }
         } catch (error) {

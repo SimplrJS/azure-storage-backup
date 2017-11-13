@@ -115,7 +115,7 @@ export async function GetBlobToStream(
     });
 }
 
-export function GetMissingBlobs(blobsList: BlobService.BlobResult[], localDownloadedList: LocalFileDto[]): string[] {
+export function FilterMissingBlobsList(blobsList: BlobService.BlobResult[], localDownloadedList: LocalFileDto[]): string[] {
     if (localDownloadedList.length <= 0) {
         return blobsList.map(x => x.name);
     }

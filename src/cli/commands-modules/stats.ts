@@ -20,7 +20,7 @@ class StatisticsCommandClass implements CommandModule {
             await storageAccountManager.FetchAllContainers();
 
             if (IsContainerNameValid(options.container)) {
-                await storageAccountManager.FetchContainerBlobsListByContainerName(options.container);
+                await storageAccountManager.FetchContainerBlobsList(options.container);
             } else {
                 await storageAccountManager.FetchContainersBlobsList();
             }
