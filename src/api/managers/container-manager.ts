@@ -3,7 +3,7 @@ import { BaseManager } from "../abstractions/base-manager";
 import { GetContainersList } from "../helpers/blob-helpers";
 
 export class ContainerManager extends BaseManager<BlobService.ContainerResult> {
-    public Next(): Promise<BlobService.ContainerResult[]> {
+    public async Next(): Promise<BlobService.ContainerResult[]> {
         return this.getContainersList();
     }
 
