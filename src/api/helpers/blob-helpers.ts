@@ -146,11 +146,20 @@ export function GetMissingBlobs(blobsList: BlobService.BlobResult[], localDownlo
     return newItems;
 }
 
-export async function GetLocalFiles(containerSourcePath: string, pattern: string[] = ["**/*"]): Promise<LocalFileDto[]> {
+export async function GetLocalFilesList(containerSourcePath: string, pattern: string[] = ["**/*"]): Promise<LocalFileDto[]> {
     const options: IOptions = {
         cwd: containerSourcePath,
         stats: true,
         onlyFiles: true
+    };
+
+    return await fastGlob(pattern, options);
+}
+
+export async function GetLocalDirectoriesList(sourcePath: string, pattern: string[] = ["*"]): Promise<string[]> {
+    const options: IOptions = {
+        cwd: sourcePath,
+        onlyDirs: true
     };
 
     return await fastGlob(pattern, options);
