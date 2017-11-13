@@ -122,7 +122,7 @@ export class StorageAccountManager {
     }
 
     private async saveContainerDownloadsList(containerName: string, entries: string[]): Promise<void> {
-        this.logger.info(`Caching ${entries.length} "${containerName}" checked list entries.`);
+        this.logger.info(`Caching ${entries.length} "${containerName}" missing blobs list entries.`);
         const blobsListPath = this.GetContainerDownloadsListPath(containerName);
 
         const checkList: CheckList = {
@@ -132,7 +132,7 @@ export class StorageAccountManager {
         };
 
         await fs.writeJSON(blobsListPath, checkList);
-        this.logger.info(`${entries.length} "${containerName}" checked list entries. Successfully cached.`);
+        this.logger.notice(`${entries.length} "${containerName}" missing blobs list entries. Successfully cached.`);
     }
 
     public async ValidateContainerFiles(containerName: string): Promise<string[]> {
