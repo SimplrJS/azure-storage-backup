@@ -8,7 +8,7 @@ export interface CachedList<T> {
 
 export type BlobsList = CachedList<BlobService.BlobResult>;
 
-export type CheckList = CachedList<string>;
+export type DownloadsList = CachedList<string>;
 
 export interface ConfigData {
     storageAccount: string;

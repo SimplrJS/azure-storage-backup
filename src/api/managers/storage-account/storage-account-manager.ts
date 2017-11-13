@@ -3,7 +3,7 @@ import * as path from "path";
 import { tmpdir, EOL } from "os";
 import { Logger, createBlobService, BlobService } from "azure-storage";
 
-import { ConfigData, BlobsList, CheckList } from "./storage-account-contracts";
+import { ConfigData, BlobsList, DownloadsList } from "./storage-account-contracts";
 import { ContainerManager } from "../container-manager";
 import { BlobManager } from "../blob-manager";
 import { AsyncManager, PromiseHandler } from "../../promises/async-manager";
@@ -125,7 +125,7 @@ export class StorageAccountManager {
         this.logger.info(`Caching ${entries.length} "${containerName}" missing blobs list entries.`);
         const blobsListPath = this.GetContainerDownloadsListPath(containerName);
 
-        const checkList: CheckList = {
+        const checkList: DownloadsList = {
             ContainerName: containerName,
             TimeStamp: Date.now(),
             Entries: entries
@@ -137,14 +137,14 @@ export class StorageAccountManager {
 
     public async ValidateContainerFiles(containerName: string): Promise<string[]> {
         if (!this.noCache) {
-            const checkedListPath = this.GetContainerDownloadsListPath(containerName);
+            const downloadsListPath = this.GetContainerDownloadsListPath(containerName);
             try {
-                const checkedList = await fs.readJson(checkedListPath) as CheckList;
-                if (checkedList != null) {
-                    return checkedList.Entries;
+                const cachedDownloadsList = await fs.readJson(downloadsListPath) as DownloadsList;
+                if (cachedDownloadsList != null) {
+                    return cachedDownloadsList.Entries;
                 }
             } catch (error) {
-                this.logger.warn(`Failed to read JSON. ${EOL}${error}`);
+                this.logger.warn(`Failed to get cached container downloads list ${EOL}${error}`);
             }
         }
 
