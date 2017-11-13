@@ -4,6 +4,7 @@ import { CommandModule } from "yargs";
 import { writeJSON } from "fs-extra";
 import { CLIArgumentsObject } from "../cli-contracts";
 import { ConfigData } from "../../api/managers/storage-account/storage-account-contracts";
+import { DEFAULT_CLI_ARGUMENTS } from "../cli-helpers";
 
 export enum ConnectionType {
     AccountNameAndKey = "accountNameAndKey",
@@ -77,7 +78,7 @@ class ConfigInitializationCommandClass implements CommandModule {
         const { configPath, ...config } = azureStorageAnswers as AzureStorageAnswersDto;
         config.storageHost = azureStorageAnswers.storageHost || undefined;
 
-        const outputPath = path.join(configPath, "exporter.config.json");
+        const outputPath = path.join(configPath, DEFAULT_CLI_ARGUMENTS.config);
 
         try {
             await writeJSON(outputPath, config);

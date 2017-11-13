@@ -1,16 +1,20 @@
 import { BlobService, StorageHost } from "azure-storage";
 
-export interface BlobsList {
+export interface CachedList<T> {
     ContainerName: string;
     TimeStamp: number;
-    Entries: BlobService.BlobResult[];
+    Entries: T[];
 }
+
+export type BlobsList = CachedList<BlobService.BlobResult>;
+
+export type DownloadsList = CachedList<string>;
 
 export interface ConfigData {
     storageAccount: string;
     storageAccessKey: string;
     storageHost?: StorageHost;
-    verbose?: boolean;
-    outDir?: string;
-    retriesCount?: number;
+    verbose: boolean;
+    outDir: string;
+    retriesCount: number;
 }

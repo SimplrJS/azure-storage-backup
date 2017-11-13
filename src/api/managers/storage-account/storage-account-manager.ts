@@ -3,13 +3,13 @@ import * as path from "path";
 import { tmpdir, EOL } from "os";
 import { Logger, createBlobService, BlobService } from "azure-storage";
 
-import { ConfigData, BlobsList } from "./storage-account-contracts";
+import { ConfigData, BlobsList, DownloadsList } from "./storage-account-contracts";
 import { ContainerManager } from "../container-manager";
 import { BlobManager } from "../blob-manager";
 import { AsyncManager, PromiseHandler } from "../../promises/async-manager";
 
 import { PACKAGE_JSON } from "../../../cli/cli-helpers";
-import { GetServiceProperties } from "../../helpers/blob-helpers";
+import { GetServiceProperties, GetLocalFilesList, FilterMissingBlobsList } from "../../helpers/blob-helpers";
 
 export class StorageAccountManager {
     constructor(private config: ConfigData, private logger: Logger, private noCache: boolean = false) {
@@ -32,6 +32,7 @@ export class StorageAccountManager {
     }
 
     public async FetchAllContainers(): Promise<BlobService.ContainerResult[]> {
+        // TODO: cache "/Temp/{package-name}/{storage-account}/containers.json"
         try {
             this.logger.info(`Fetching all containers from storage account "${this.config.storageAccount}".`);
             const result = await this.containersManager.FetchAll();
@@ -43,12 +44,16 @@ export class StorageAccountManager {
         }
     }
 
-    public GetBlobListPath(containerName: string): string {
+    public GetContainerBlobsListPath(containerName: string): string {
         return path.join(tmpdir(), PACKAGE_JSON.name, this.config.storageAccount, containerName, "blobs-list.json");
     }
 
-    public async GetCachedBlobList(containerName: string): Promise<BlobsList> {
-        const blobsListPath = this.GetBlobListPath(containerName);
+    public GetContainerDownloadsListPath(containerName: string): string {
+        return path.join(tmpdir(), PACKAGE_JSON.name, this.config.storageAccount, containerName, "downloads-list.json");
+    }
+
+    public async GetContainerCachedBlobsList(containerName: string): Promise<BlobsList> {
+        const blobsListPath = this.GetContainerBlobsListPath(containerName);
         try {
             return await fs.readJSON(blobsListPath) as BlobsList;
         } catch (error) {
@@ -56,16 +61,17 @@ export class StorageAccountManager {
         }
     }
 
-    public async FetchContainerBlobsListByContainerName(containerName: string): Promise<BlobService.BlobResult[]> {
+    public async FetchContainerBlobsList(containerName: string): Promise<BlobService.BlobResult[]> {
         let blobsList: BlobService.BlobResult[] | undefined;
         // Searching for container's blob list in cache
         if (!this.noCache) {
             try {
                 this.logger.info("Searching for container's blob list in cache.");
-                const blobsListDto = await this.GetCachedBlobList(containerName);
+                const cachedBlobsList = await this.GetContainerCachedBlobsList(containerName);
                 this.logger.notice(`"${containerName}" container's blob list fetched from cache.`);
-                blobsList = blobsListDto.Entries;
+                blobsList = cachedBlobsList.Entries;
             } catch (error) {
+                // TODO: print error
                 this.logger.error(`Failed to get cached blob list for container "${containerName}".`);
             }
         }
@@ -100,7 +106,7 @@ export class StorageAccountManager {
 
     private async cacheBlobsList(containerName: string, entries: BlobService.BlobResult[]): Promise<void> {
         this.logger.info(`Caching ${entries.length} "${containerName}" blob list entries.`);
-        const listPath = this.GetBlobListPath(containerName);
+        const listPath = this.GetContainerBlobsListPath(containerName);
         const directory = path.parse(listPath).dir;
 
         await fs.mkdirp(directory);
@@ -115,8 +121,55 @@ export class StorageAccountManager {
         this.logger.info(`${entries.length} "${containerName}" blob list entries. Successfully cached.`);
     }
 
+    private async saveContainerDownloadsList(containerName: string, entries: string[]): Promise<void> {
+        this.logger.info(`Caching ${entries.length} "${containerName}" missing blobs list entries.`);
+        const blobsListPath = this.GetContainerDownloadsListPath(containerName);
+
+        const checkList: DownloadsList = {
+            ContainerName: containerName,
+            TimeStamp: Date.now(),
+            Entries: entries
+        };
+
+        await fs.writeJSON(blobsListPath, checkList);
+        this.logger.notice(`${entries.length} "${containerName}" missing blobs list entries. Successfully cached.`);
+    }
+
+    public async ValidateContainerFiles(containerName: string): Promise<string[]> {
+        if (!this.noCache) {
+            const downloadsListPath = this.GetContainerDownloadsListPath(containerName);
+            try {
+                const cachedDownloadsList = await fs.readJson(downloadsListPath) as DownloadsList;
+                if (cachedDownloadsList != null) {
+                    return cachedDownloadsList.Entries;
+                }
+            } catch (error) {
+                this.logger.warn(`Failed to get cached container downloads list ${EOL}${error}`);
+            }
+        }
+
+        // Get cached blob-list by container
+        const blobsList = await this.FetchContainerBlobsList(containerName);
+
+        // Get downloaded file list by container. From: "./{azure-storage-account}/{container-name}/"
+        const containerSourcePath = path.join(this.config.outDir, this.config.storageAccount, containerName);
+        const localFilesList = await GetLocalFilesList(containerSourcePath);
+
+        // Get missing blobs
+        let downloadsList = new Array<string>();
+        if (localFilesList.length > 0) {
+            downloadsList = await FilterMissingBlobsList(blobsList, localFilesList);
+        } else {
+            downloadsList = blobsList.map(x => x.name);
+        }
+
+        // Save checked list in temp folder. "/tmpdir/{package-name}/{azure-storage-account}/{container-name}/check-list.json"
+        await this.saveContainerDownloadsList(containerName, downloadsList);
+        return downloadsList;
+    }
+
     private blobsListFetchHandler: PromiseHandler<BlobService.ContainerResult, BlobService.BlobResult[]> = async containerResult => {
-        const results = await this.FetchContainerBlobsListByContainerName(containerResult.name, );
+        const results = await this.FetchContainerBlobsList(containerResult.name, );
         return results;
     }
 }
