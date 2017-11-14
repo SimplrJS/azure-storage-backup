@@ -1,10 +1,10 @@
 import * as path from "path";
 import { prompt, Questions } from "inquirer";
 import { CommandModule } from "yargs";
-import { writeJSON } from "fs-extra";
+import { writeJSON, readJSON } from "fs-extra";
 import { CLIArgumentsObject } from "../cli-contracts";
 import { ConfigData } from "../../api/managers/storage-account/storage-account-contracts";
-import { DEFAULT_CLI_ARGUMENTS } from "../cli-helpers";
+import { DEFAULT_CLI_ARGUMENTS, DefaultLogger } from "../cli-helpers";
 
 export enum ConnectionType {
     AccountNameAndKey = "accountNameAndKey",
@@ -28,41 +28,59 @@ class ConfigInitializationCommandClass implements CommandModule {
     }
 
     public handler = async (options: CLIArgumentsObject): Promise<void> => {
+        const cwdConfigPath = path.join(process.cwd(), DEFAULT_CLI_ARGUMENTS.config);
+        let cwdConfig: ConfigData;
+        try {
+            cwdConfig = await readJSON(cwdConfigPath) as ConfigData;
+        } catch (error) {
+            cwdConfig = {
+                storageAccount: "",
+                storageAccessKey: "",
+                storageHost: undefined,
+                verbose: false,
+                outDir: process.cwd(),
+                retriesCount: 5
+            };
+        }
+
         const azureStorageQuestions: Questions = [
             {
                 type: "input",
                 name: "storageAccount",
                 message: "Storage Account name:",
+                default: cwdConfig.storageAccount,
                 validate: this.requireNotEmpty
             },
             {
                 type: "input",
                 name: "storageAccessKey",
                 message: "Storage Account key:",
+                default: cwdConfig.storageAccessKey,
                 validate: this.requireNotEmpty
             },
             {
                 type: "input",
                 name: "storageHost",
-                message: "Storage host address (optional):"
+                message: "Storage host address (optional):",
+                default: cwdConfig.storageHost
             },
             {
                 type: "confirm",
                 name: "verbose",
-                default: false,
+                default: cwdConfig.verbose,
                 message: "Verbose:"
             },
             {
                 type: "input",
                 name: "outDir",
-                default: process.cwd(),
+                default: cwdConfig.outDir,
                 message: "Save downloaded files to directory:",
                 validate: this.requireNotEmpty
             },
             {
                 type: "input",
                 name: "retriesCount",
-                default: 5,
+                default: cwdConfig.retriesCount,
                 message: "Retries count:"
             },
             {
@@ -82,9 +100,9 @@ class ConfigInitializationCommandClass implements CommandModule {
 
         try {
             await writeJSON(outputPath, config);
-            console.log("Successfully saved config to:", outputPath);
+            DefaultLogger.log("Successfully saved config to:", outputPath);
         } catch (error) {
-            console.error(error);
+            DefaultLogger.error(error);
         }
     }
 }
