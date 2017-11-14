@@ -27,13 +27,21 @@ class ConfigInitializationCommandClass implements CommandModule {
         return "Value is empty.";
     }
 
+    private requirePositiveInteger = (value: string) => {
+        const valueIsNumber = Number(value);
+        if (Number.isInteger(valueIsNumber) && valueIsNumber > 0) {
+            return true;
+        }
+        return "Value is not a positive integer.";
+    }
+
     public handler = async (options: CLIArgumentsObject): Promise<void> => {
         const cwdConfigPath = path.join(process.cwd(), DEFAULT_CLI_ARGUMENTS.config);
-        let cwdConfig: ConfigData;
+        let initialConfig: ConfigData;
         try {
-            cwdConfig = await readJSON(cwdConfigPath) as ConfigData;
+            initialConfig = await readJSON(cwdConfigPath) as ConfigData;
         } catch (error) {
-            cwdConfig = {
+            initialConfig = {
                 storageAccount: "",
                 storageAccessKey: "",
                 storageHost: undefined,
@@ -48,46 +56,47 @@ class ConfigInitializationCommandClass implements CommandModule {
                 type: "input",
                 name: "storageAccount",
                 message: "Storage Account name:",
-                default: cwdConfig.storageAccount,
+                default: initialConfig.storageAccount || undefined,
                 validate: this.requireNotEmpty
             },
             {
                 type: "input",
                 name: "storageAccessKey",
                 message: "Storage Account key:",
-                default: cwdConfig.storageAccessKey,
+                default: initialConfig.storageAccessKey || undefined,
                 validate: this.requireNotEmpty
             },
             {
                 type: "input",
                 name: "storageHost",
                 message: "Storage host address (optional):",
-                default: cwdConfig.storageHost
+                default: initialConfig.storageHost
             },
             {
                 type: "confirm",
                 name: "verbose",
-                default: cwdConfig.verbose,
-                message: "Verbose:"
+                message: "Verbose:",
+                default: initialConfig.verbose
             },
             {
                 type: "input",
                 name: "outDir",
-                default: cwdConfig.outDir,
                 message: "Save downloaded files to directory:",
+                default: initialConfig.outDir,
                 validate: this.requireNotEmpty
             },
             {
                 type: "input",
                 name: "retriesCount",
-                default: cwdConfig.retriesCount,
-                message: "Retries count:"
+                message: "Retries count:",
+                default: initialConfig.retriesCount,
+                validate: this.requirePositiveInteger
             },
             {
                 type: "input",
                 name: "configPath",
-                default: process.cwd(),
                 message: "Save config file to directory:",
+                default: process.cwd(),
                 validate: this.requireNotEmpty
             }
         ];
