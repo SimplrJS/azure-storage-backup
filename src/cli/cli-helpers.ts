@@ -14,7 +14,7 @@ export function GetVersion(): string {
     return PACKAGE_JSON.version;
 }
 
-export const DEFAULT_LOGGER = new Logger(Logger.LogLevels.INFO);
+export const DefaultLogger = new Logger(Logger.LogLevels.INFO);
 
 export const DEFAULT_CLI_ARGUMENTS = {
     config: "./extractor.config.json"

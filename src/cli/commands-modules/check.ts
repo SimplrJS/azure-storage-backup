@@ -1,6 +1,6 @@
 import { CommandModule } from "yargs";
 
-import { DEFAULT_LOGGER, ResolveConfigPath, ReadConfig, IsContainerNameValid } from "../cli-helpers";
+import { DefaultLogger, ResolveConfigPath, ReadConfig, IsContainerNameValid } from "../cli-helpers";
 import { CLIArgumentsObject } from "../cli-contracts";
 import { StorageAccountManager } from "../../api/managers/storage-account/storage-account-manager";
 
@@ -12,9 +12,9 @@ class CheckWithAzureCommandClass implements CommandModule {
     public handler = async (options: CLIArgumentsObject): Promise<void> => {
         try {
             const configPath = ResolveConfigPath(options.config);
-            const config = ReadConfig(configPath, DEFAULT_LOGGER);
+            const config = ReadConfig(configPath, DefaultLogger);
 
-            const storageAccountManager = new StorageAccountManager(config, DEFAULT_LOGGER, options.noCache);
+            const storageAccountManager = new StorageAccountManager(config, DefaultLogger, options.noCache);
             await storageAccountManager.CheckServiceStatus();
 
             if (IsContainerNameValid(options.container)) {
@@ -28,7 +28,7 @@ class CheckWithAzureCommandClass implements CommandModule {
                 }
             }
         } catch (error) {
-            DEFAULT_LOGGER.emergency(`Failed to check correlation between data.`);
+            DefaultLogger.emergency(`Failed to check correlation between data.`);
         }
     }
 }

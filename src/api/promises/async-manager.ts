@@ -1,4 +1,4 @@
-export type PromiseHandler<TData, TResult = void> = (data: TData) => Promise<TResult>;
+export type PromiseHandler<TData, TResult = void, TContext = void> = (data: TData, context: TContext) => Promise<TResult>;
 export type PromiseNotifier = (total: number, finished: number) => void;
 
 export interface PromiseDto<TData, TResult> {
@@ -20,9 +20,9 @@ export enum PromiseStatus {
     Succeeded = 32
 }
 
-export class AsyncManager<TData, TResult = void> {
+export class AsyncManager<TData, TResult = void, TContext = void> {
     constructor(
-        private handler: PromiseHandler<TData, TResult>,
+        private handler: PromiseHandler<TData, TResult, TContext | undefined>,
         private promisesConcurrently: number = 30,
         private maxRetries: number = 3,
         private throwOnError: boolean = false
@@ -79,7 +79,18 @@ export class AsyncManager<TData, TResult = void> {
         return this.hasFailed;
     }
 
+    private context: TContext | undefined;
+
+    public set Context(contextValue: TContext | undefined) {
+        this.context = contextValue;
+    }
+
+    public get Context(): TContext | undefined {
+        return this.context;
+    }
+
     private reset(): void {
+        this.context = undefined;
         this.isStarted = false;
         this.hasFailed = false;
         this.pointerPosition = 0;
@@ -89,12 +100,13 @@ export class AsyncManager<TData, TResult = void> {
         this.promisesData = [];
     }
 
-    public async Start(promisesData: TData[], retriesCount = 3): Promise<ResultDto<TData, TResult>> {
+    public async Start(promisesData: TData[], context?: TContext): Promise<ResultDto<TData, TResult>> {
         if (this.isStarted) {
             throw new Error(`Cannot start AsyncManager in the middle of process.`);
         }
 
         this.reset();
+        this.context = context;
         this.isStarted = true;
 
         this.promisesData = promisesData.map<PromiseDto<TData, TResult | undefined>>(promiseData => ({
@@ -104,11 +116,11 @@ export class AsyncManager<TData, TResult = void> {
             Result: undefined
         }));
 
-        this.activatePromises();
-
         return new Promise<ResultDto<TData, TResult>>((resolve, reject) => {
             this.resolve = resolve;
             this.reject = reject;
+
+            this.activatePromises();
         });
     }
 
@@ -136,7 +148,7 @@ export class AsyncManager<TData, TResult = void> {
         const data = this.promisesData[index];
 
         try {
-            const result = await this.handler(data.Data);
+            const result = await this.handler(data.Data, this.context);
 
             // If manager failed while awaiting this promise, don't resolve it's value.
             if (this.hasFailed) {

@@ -115,18 +115,18 @@ export async function GetBlobToStream(
     });
 }
 
-export function FilterMissingBlobsList(blobsList: BlobService.BlobResult[], localDownloadedList: LocalFileDto[]): string[] {
+export function FilterMissingBlobsList(blobsList: BlobService.BlobResult[], localDownloadedList: LocalFileDto[]): BlobService.BlobResult[] {
     if (localDownloadedList.length <= 0) {
-        return blobsList.map(x => x.name);
+        return blobsList;
     }
 
-    const newItems: string[] = new Array<string>();
+    const newItems: BlobService.BlobResult[] = new Array<BlobService.BlobResult>();
     for (let i = 0; i < blobsList.length; i++) {
         const blob = blobsList[i];
         const localFileIndex = localDownloadedList.findIndex(x => x.path === blob.name);
         // Blob not exists in local file list
         if (localFileIndex === -1) {
-            newItems.push(blob.name);
+            newItems.push(blob);
         } else {
             // Blob size not the same as downloaded local file
             const localFilePath = localDownloadedList[localFileIndex];
@@ -138,7 +138,7 @@ export function FilterMissingBlobsList(blobsList: BlobService.BlobResult[], loca
             }
 
             if (localFilePath.size !== blobContentLength) {
-                newItems.push(blob.name);
+                newItems.push(blob);
             }
         }
     }

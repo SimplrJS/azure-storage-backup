@@ -8,8 +8,6 @@ export interface CachedList<T> {
 
 export type BlobsList = CachedList<BlobService.BlobResult>;
 
-export type DownloadsList = CachedList<string>;
-
 export interface ConfigData {
     storageAccount: string;
     storageAccessKey: string;
@@ -17,4 +15,8 @@ export interface ConfigData {
     verbose: boolean;
     outDir: string;
     retriesCount: number;
+}
+
+export interface BlobContext {
+    ContainerName: string;
 }

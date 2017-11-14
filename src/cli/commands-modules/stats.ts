@@ -1,7 +1,7 @@
 import { CommandModule } from "yargs";
 
 import { CLIArgumentsObject } from "../cli-contracts";
-import { ReadConfig, ResolveConfigPath, DEFAULT_LOGGER, IsContainerNameValid } from "../cli-helpers";
+import { ReadConfig, ResolveConfigPath, DefaultLogger, IsContainerNameValid } from "../cli-helpers";
 import { StorageAccountManager } from "../../api/managers/storage-account/storage-account-manager";
 
 class StatisticsCommandClass implements CommandModule {
@@ -12,9 +12,9 @@ class StatisticsCommandClass implements CommandModule {
     public handler = async (options: CLIArgumentsObject): Promise<void> => {
         try {
             const configPath = ResolveConfigPath(options.config);
-            const config = ReadConfig(configPath, DEFAULT_LOGGER);
+            const config = ReadConfig(configPath, DefaultLogger);
 
-            const storageAccountManager = new StorageAccountManager(config, DEFAULT_LOGGER, options.noCache);
+            const storageAccountManager = new StorageAccountManager(config, DefaultLogger, options.noCache);
             await storageAccountManager.CheckServiceStatus();
 
             await storageAccountManager.FetchAllContainers();
@@ -26,7 +26,7 @@ class StatisticsCommandClass implements CommandModule {
             }
 
         } catch (error) {
-            DEFAULT_LOGGER.emergency(`Failed to get statistics of a storage account.`);
+            DefaultLogger.emergency(`Failed to get statistics of a storage account.`);
         }
     }
 }
