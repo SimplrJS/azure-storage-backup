@@ -20,14 +20,14 @@ class ConfigInitializationCommandClass implements CommandModule {
 
     public describe: string = "Run configuration prompts.";
 
-    private requireNotEmpty = (value: string) => {
+    private requireNotEmpty = (value: string): boolean | string => {
         if (value.trim().length !== 0) {
             return true;
         }
         return "Value is empty.";
     }
 
-    private requirePositiveInteger = (value: string) => {
+    private requirePositiveInteger = (value: string): boolean | string => {
         const valueIsNumber = Number(value);
         if (Number.isInteger(valueIsNumber) && valueIsNumber > 0) {
             return true;
