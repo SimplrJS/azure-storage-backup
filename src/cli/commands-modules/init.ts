@@ -1,10 +1,10 @@
 import * as path from "path";
 import { prompt, Questions } from "inquirer";
 import { CommandModule } from "yargs";
-import { writeJSON } from "fs-extra";
+import { writeJSON, readJSON } from "fs-extra";
 import { CLIArgumentsObject } from "../cli-contracts";
 import { ConfigData } from "../../api/managers/storage-account/storage-account-contracts";
-import { DEFAULT_CLI_ARGUMENTS } from "../cli-helpers";
+import { DEFAULT_CLI_ARGUMENTS, DefaultLogger } from "../cli-helpers";
 
 export enum ConnectionType {
     AccountNameAndKey = "accountNameAndKey",
@@ -20,56 +20,83 @@ class ConfigInitializationCommandClass implements CommandModule {
 
     public describe: string = "Run configuration prompts.";
 
-    private requireNotEmpty = (value: string) => {
+    private requireNotEmpty = (value: string): boolean | string => {
         if (value.trim().length !== 0) {
             return true;
         }
         return "Value is empty.";
     }
 
+    private requirePositiveInteger = (value: string): boolean | string => {
+        const valueIsNumber = Number(value);
+        if (Number.isInteger(valueIsNumber) && valueIsNumber > 0) {
+            return true;
+        }
+        return "Value is not a positive integer.";
+    }
+
     public handler = async (options: CLIArgumentsObject): Promise<void> => {
+        const cwdConfigPath = path.join(process.cwd(), DEFAULT_CLI_ARGUMENTS.config);
+        let initialConfig: ConfigData;
+        try {
+            initialConfig = await readJSON(cwdConfigPath) as ConfigData;
+        } catch (error) {
+            initialConfig = {
+                storageAccount: "",
+                storageAccessKey: "",
+                storageHost: undefined,
+                verbose: false,
+                outDir: process.cwd(),
+                retriesCount: 5
+            };
+        }
+
         const azureStorageQuestions: Questions = [
             {
                 type: "input",
                 name: "storageAccount",
                 message: "Storage Account name:",
+                default: initialConfig.storageAccount || undefined,
                 validate: this.requireNotEmpty
             },
             {
                 type: "input",
                 name: "storageAccessKey",
                 message: "Storage Account key:",
+                default: initialConfig.storageAccessKey || undefined,
                 validate: this.requireNotEmpty
             },
             {
                 type: "input",
                 name: "storageHost",
-                message: "Storage host address (optional):"
+                message: "Storage host address (optional):",
+                default: initialConfig.storageHost
             },
             {
                 type: "confirm",
                 name: "verbose",
-                default: false,
-                message: "Verbose:"
+                message: "Verbose:",
+                default: initialConfig.verbose
             },
             {
                 type: "input",
                 name: "outDir",
-                default: process.cwd(),
                 message: "Save downloaded files to directory:",
+                default: initialConfig.outDir,
                 validate: this.requireNotEmpty
             },
             {
                 type: "input",
                 name: "retriesCount",
-                default: 5,
-                message: "Retries count:"
+                message: "Retries count:",
+                default: initialConfig.retriesCount,
+                validate: this.requirePositiveInteger
             },
             {
                 type: "input",
                 name: "configPath",
-                default: process.cwd(),
                 message: "Save config file to directory:",
+                default: process.cwd(),
                 validate: this.requireNotEmpty
             }
         ];
@@ -82,9 +109,9 @@ class ConfigInitializationCommandClass implements CommandModule {
 
         try {
             await writeJSON(outputPath, config);
-            console.log("Successfully saved config to:", outputPath);
+            DefaultLogger.log("Successfully saved config to:", outputPath);
         } catch (error) {
-            console.error(error);
+            DefaultLogger.error(error);
         }
     }
 }
