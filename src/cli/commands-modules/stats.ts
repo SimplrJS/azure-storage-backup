@@ -1,11 +1,17 @@
-import * as FileSize from "filesize";
 import * as Table from "cli-table2";
 import { CommandModule, CommandBuilder } from "yargs";
 import { EOL } from "os";
 import { BlobService } from "azure-storage";
 
 import { CLIArgumentsObject } from "../cli-contracts";
-import { ReadConfig, ResolveConfigPath, DefaultLogger, IsContainerNameValid } from "../cli-helpers";
+import {
+    ReadConfig,
+    ResolveConfigPath,
+    DefaultLogger,
+    IsContainerNameValid,
+    BlobsListTableConfig,
+    ConstructStatisticsTableRow
+} from "../cli-helpers";
 import { StorageAccountManager } from "../../api/managers/storage-account/storage-account-manager";
 import { PromiseDto } from "../../api/promises/async-manager";
 
@@ -25,11 +31,6 @@ class StatisticsCommandClass implements CommandModule {
         }
     };
 
-    private readonly blobsListTableConfig: Table.TableConstructorOptions = {
-        head: ["Container name", "Blobs count", "Total size"],
-        colWidths: [30, 15, 40]
-    };
-
     public handler = async (options: StatisticsCommandOptions): Promise<void> => {
         try {
             const configPath = ResolveConfigPath(options.config);
@@ -40,8 +41,8 @@ class StatisticsCommandClass implements CommandModule {
 
             if (IsContainerNameValid(options.container)) {
                 const containerBlobs = await storageAccountManager.FetchContainerBlobsList(options.container);
-                const table = new Table(this.blobsListTableConfig) as Table.HorizontalTable;
-                const row = this.getStatisticsTableRow(options.container, containerBlobs, options.showInBytes);
+                const table = new Table(BlobsListTableConfig) as Table.HorizontalTable;
+                const row = ConstructStatisticsTableRow(options.container, containerBlobs, options.showInBytes);
                 table.push(row);
                 DefaultLogger.notice(EOL + table.toString());
             } else {
@@ -81,32 +82,14 @@ class StatisticsCommandClass implements CommandModule {
         containersBlobsList: Array<PromiseDto<BlobService.ContainerResult, BlobService.BlobResult[]>>,
         showInBytes: boolean = false
     ): string {
-        const table = new Table(this.blobsListTableConfig) as Table.HorizontalTable;
+        const table = new Table(BlobsListTableConfig) as Table.HorizontalTable;
 
         for (const blobsResultsList of containersBlobsList) {
-            const row = this.getStatisticsTableRow(blobsResultsList.Data.name, blobsResultsList.Result, showInBytes);
+            const row = ConstructStatisticsTableRow(blobsResultsList.Data.name, blobsResultsList.Result, showInBytes);
             table.push(row);
         }
 
         return title + EOL + table.toString();
-    }
-
-    private getStatisticsTableRow(
-        containerName: string,
-        blobsResults: BlobService.BlobResult[],
-        showInBytes: boolean = false
-    ): Table.HorizontalTableRow {
-        let totalSize = 0;
-
-        for (const blobResult of blobsResults) {
-            const contentLength = Number(blobResult.contentLength);
-            if (isFinite(contentLength)) {
-                totalSize += contentLength;
-            }
-        }
-
-        const fileSize = showInBytes ? `${totalSize} B` : FileSize(totalSize);
-        return [containerName, blobsResults.length, fileSize];
     }
 }
 
