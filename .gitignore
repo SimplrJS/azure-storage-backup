@@ -1,2 +1,4 @@
 node_modules
 dist
+extractor.config.json
+.extractor-log

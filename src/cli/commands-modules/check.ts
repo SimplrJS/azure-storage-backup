@@ -1,4 +1,5 @@
 import { CommandModule } from "yargs";
+import { EOL } from "os";
 
 import { DefaultLogger, ResolveConfigPath, ReadConfig, IsContainerNameValid } from "../cli-helpers";
 import { CLIArgumentsObject } from "../cli-contracts";
@@ -20,15 +21,10 @@ class CheckWithAzureCommandClass implements CommandModule {
             if (IsContainerNameValid(options.container)) {
                 await storageAccountManager.ValidateContainerFiles(options.container);
             } else {
-                // Get blob container list, and check one by one.
-                const containers = await storageAccountManager.FetchAllContainers();
-
-                for (let i = 0; i < containers.length; i++) {
-                    await storageAccountManager.ValidateContainerFiles(containers[i].name);
-                }
+                await storageAccountManager.ValidateContainersFiles();
             }
         } catch (error) {
-            DefaultLogger.emergency(`Failed to check correlation between data.`);
+            DefaultLogger.emergency(`Failed to check correlation between data.${EOL}${error}`);
         }
     }
 }

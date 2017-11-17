@@ -1,4 +1,5 @@
 import * as path from "path";
+import * as fs from "fs-extra";
 import fastGlob, { IOptions } from "fast-glob";
 import { BlobService, common } from "azure-storage";
 import { Writable } from "stream";
@@ -121,14 +122,13 @@ export function FilterMissingBlobsList(blobsList: BlobService.BlobResult[], loca
     }
 
     const newItems: BlobService.BlobResult[] = new Array<BlobService.BlobResult>();
-    for (let i = 0; i < blobsList.length; i++) {
-        const blob = blobsList[i];
+    for (const blob of blobsList) {
         const localFileIndex = localDownloadedList.findIndex(x => x.path === blob.name);
-        // Blob not exists in local file list
+        // Blob does not exist in local files list
         if (localFileIndex === -1) {
             newItems.push(blob);
         } else {
-            // Blob size not the same as downloaded local file
+            // Blob size is not the same as downloaded local file
             const localFilePath = localDownloadedList[localFileIndex];
             const blobContentLength = Number(blob.contentLength);
 

@@ -1,14 +1,14 @@
 #!/usr/bin/env node
-import { CLIArgumentsObject } from "src/cli/cli-contracts";
 import * as yargs from "yargs";
 
 import { StatisticsCommand } from "./commands-modules/stats";
 import { SynchronizationCommand } from "./commands-modules/sync";
 import { CheckWithAzureCommand } from "./commands-modules/check";
 import { ConfigInitializationCommand } from "./commands-modules/init";
+import { CLIArgumentsObject } from "./cli-contracts";
 import { GetVersion } from "./cli-helpers";
 
-export const CLIArguments = yargs
+export const CLIHandler = yargs
     .help("h", "Show help")
     .alias("h", "help")
     .version(`Current version: ${GetVersion()}`)

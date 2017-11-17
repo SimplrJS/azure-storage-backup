@@ -1,12 +1,26 @@
 import { BlobService, StorageHost } from "azure-storage";
 
-export interface CachedList<T> {
-    ContainerName: string;
-    TimeStamp: number;
+export interface ItemsList<T> {
     Entries: T[];
 }
 
-export type BlobsList = CachedList<BlobService.BlobResult>;
+export interface ContainerItemsList<T> extends ItemsList<T> {
+    ContainerName: string;
+}
+
+export interface CacheData {
+    TimeStamp: number;
+}
+
+export type CachedContainerItemsList<T> = ContainerItemsList<T> & CacheData;
+
+export type BlobsList = CachedContainerItemsList<BlobService.BlobResult>;
+
+export interface StorageAccountItemsList<T> extends ItemsList<T> {
+    StorageAccount: string;
+}
+
+export type ContainersList = StorageAccountItemsList<BlobService.ContainerResult> & CacheData;
 
 export interface ConfigData {
     storageAccount: string;
@@ -19,4 +33,9 @@ export interface ConfigData {
 
 export interface BlobContext {
     ContainerName: string;
+}
+
+export interface ProgressTokens {
+    LastActionTitle: string;
+    LogLevel: string;
 }

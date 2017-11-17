@@ -20,12 +20,7 @@ class SynchronizationCommandClass implements CommandModule {
             if (IsContainerNameValid(options.container)) {
                 await storageAccountManager.DownloadContainerBlobs(options.container);
             } else {
-                // Get blob container list, and check one by one.
-                const containers = await storageAccountManager.FetchAllContainers();
-
-                for (let i = 0; i < containers.length; i++) {
-                    await storageAccountManager.DownloadContainerBlobs(containers[i].name);
-                }
+                await storageAccountManager.DownloadContainersBlobs();
             }
         } catch (error) {
             DefaultLogger.critical(`Failed to download containers blobs. ${EOL}${error}`);

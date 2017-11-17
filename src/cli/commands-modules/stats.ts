@@ -1,15 +1,36 @@
-import { CommandModule } from "yargs";
+import * as FileSize from "filesize";
+import * as Table from "cli-table2";
+import { CommandModule, CommandBuilder } from "yargs";
+import { EOL } from "os";
+import { BlobService } from "azure-storage";
 
 import { CLIArgumentsObject } from "../cli-contracts";
 import { ReadConfig, ResolveConfigPath, DefaultLogger, IsContainerNameValid } from "../cli-helpers";
 import { StorageAccountManager } from "../../api/managers/storage-account/storage-account-manager";
+import { PromiseDto } from "../../api/promises/async-manager";
+
+export interface StatisticsCommandOptions extends CLIArgumentsObject {
+    showInBytes: boolean;
+}
 
 class StatisticsCommandClass implements CommandModule {
     public command: string = "stats";
 
     public describe: string = "Retrieves statistics of a Storage account or a container.";
 
-    public handler = async (options: CLIArgumentsObject): Promise<void> => {
+    public builder: CommandBuilder = {
+        showInBytes: {
+            default: false,
+            type: "boolean"
+        }
+    };
+
+    private readonly blobsListTableConfig: Table.TableConstructorOptions = {
+        head: ["Container name", "Blobs count", "Total size"],
+        colWidths: [30, 15, 40]
+    };
+
+    public handler = async (options: StatisticsCommandOptions): Promise<void> => {
         try {
             const configPath = ResolveConfigPath(options.config);
             const config = ReadConfig(configPath, DefaultLogger);
@@ -17,17 +38,75 @@ class StatisticsCommandClass implements CommandModule {
             const storageAccountManager = new StorageAccountManager(config, DefaultLogger, options.noCache);
             await storageAccountManager.CheckServiceStatus();
 
-            await storageAccountManager.FetchAllContainers();
-
             if (IsContainerNameValid(options.container)) {
-                await storageAccountManager.FetchContainerBlobsList(options.container);
+                const containerBlobs = await storageAccountManager.FetchContainerBlobsList(options.container);
+                const table = new Table(this.blobsListTableConfig) as Table.HorizontalTable;
+                const row = this.getStatisticsTableRow(options.container, containerBlobs, options.showInBytes);
+                table.push(row);
+                DefaultLogger.notice(EOL + table.toString());
             } else {
-                await storageAccountManager.FetchContainersBlobsList();
+                const containersBlobs = await storageAccountManager.FetchContainersBlobsList();
+                const successTitle = `Successfully fetched blobs lists (${containersBlobs.Succeeded.length}):`;
+                const successOutputString = this.logSucceededBlobsLists(successTitle, containersBlobs.Succeeded, options.showInBytes);
+                DefaultLogger.notice(successOutputString);
+
+                if (containersBlobs.Failed.length > 0) {
+                    const failureTitle = `Failed to fetch ${containersBlobs.Failed.length} blobs lists:`;
+                    const failureOutputString = this.logFailedBlobsLists(failureTitle, containersBlobs.Failed, options.showInBytes);
+                    DefaultLogger.notice(failureOutputString);
+                }
             }
 
         } catch (error) {
-            DefaultLogger.emergency(`Failed to get statistics of a storage account.`);
+            DefaultLogger.emergency(`Failed to get statistics of a storage account. ${EOL}${error}`);
         }
+    }
+
+    private logFailedBlobsLists(
+        title: string,
+        failuresList: Array<PromiseDto<BlobService.ContainerResult, undefined>>,
+        showInBytes: boolean = false
+    ): string {
+        let finalString = title + EOL;
+
+        for (const blobsResultList of failuresList) {
+            finalString += `${blobsResultList.Data.name}:${EOL}*     ${blobsResultList.Error}`;
+        }
+
+        return finalString;
+    }
+
+    private logSucceededBlobsLists(
+        title: string,
+        containersBlobsList: Array<PromiseDto<BlobService.ContainerResult, BlobService.BlobResult[]>>,
+        showInBytes: boolean = false
+    ): string {
+        const table = new Table(this.blobsListTableConfig) as Table.HorizontalTable;
+
+        for (const blobsResultsList of containersBlobsList) {
+            const row = this.getStatisticsTableRow(blobsResultsList.Data.name, blobsResultsList.Result, showInBytes);
+            table.push(row);
+        }
+
+        return title + EOL + table.toString();
+    }
+
+    private getStatisticsTableRow(
+        containerName: string,
+        blobsResults: BlobService.BlobResult[],
+        showInBytes: boolean = false
+    ): Table.HorizontalTableRow {
+        let totalSize = 0;
+
+        for (const blobResult of blobsResults) {
+            const contentLength = Number(blobResult.contentLength);
+            if (isFinite(contentLength)) {
+                totalSize += contentLength;
+            }
+        }
+
+        const fileSize = showInBytes ? `${totalSize} B` : FileSize(totalSize);
+        return [containerName, blobsResults.length, fileSize];
     }
 }
 

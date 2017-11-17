@@ -9,7 +9,7 @@ export interface PromiseDto<TData, TResult> {
     Result: TResult;
 }
 
-export interface ResultDto<TData, TResult> {
+export interface AsyncSessionResultDto<TData, TResult> {
     Succeeded: Array<PromiseDto<TData, TResult>>;
     Failed: Array<PromiseDto<TData, undefined>>;
 }
@@ -58,7 +58,11 @@ export class AsyncManager<TData, TResult = void, TContext = void> {
 
     private onSinglePromiseFinished: PromiseNotifier | undefined;
 
-    private resolve: (value?: ResultDto<TData, TResult> | PromiseLike<ResultDto<TData, TResult>> | undefined) => void;
+    private resolve: (
+        value?: AsyncSessionResultDto<TData, TResult> |
+            PromiseLike<AsyncSessionResultDto<TData, TResult>> |
+            undefined
+    ) => void;
     private reject: (error?: any) => void;
 
     private pointerPosition: number = 0;
@@ -100,7 +104,7 @@ export class AsyncManager<TData, TResult = void, TContext = void> {
         this.promisesData = [];
     }
 
-    public async Start(promisesData: TData[], context?: TContext): Promise<ResultDto<TData, TResult>> {
+    public async Start(promisesData: TData[], context?: TContext): Promise<AsyncSessionResultDto<TData, TResult>> {
         if (this.isStarted) {
             throw new Error(`Cannot start AsyncManager in the middle of process.`);
         }
@@ -116,7 +120,7 @@ export class AsyncManager<TData, TResult = void, TContext = void> {
             Result: undefined
         }));
 
-        return new Promise<ResultDto<TData, TResult>>((resolve, reject) => {
+        return new Promise<AsyncSessionResultDto<TData, TResult>>((resolve, reject) => {
             this.resolve = resolve;
             this.reject = reject;
 
@@ -127,7 +131,7 @@ export class AsyncManager<TData, TResult = void, TContext = void> {
     private activatePromises(): void {
         if (this.FinishedCount === this.promisesData.length) {
             // this.promiseData[index].Result will always defined, because we know, that this index has finished.
-            const results: ResultDto<TData, TResult> = {
+            const results: AsyncSessionResultDto<TData, TResult> = {
                 Succeeded: this.SucceededPromises,
                 Failed: this.FailedPromises
             };
@@ -156,6 +160,7 @@ export class AsyncManager<TData, TResult = void, TContext = void> {
             }
 
             this.promisesData[index].Result = result;
+            this.promisesData[index].Status = PromiseStatus.Succeeded;
             this.succeededPromiseIndexes.push(index);
 
             if (this.onSinglePromiseFinished != null) {
@@ -184,6 +189,7 @@ export class AsyncManager<TData, TResult = void, TContext = void> {
                 } else {
                     // Reached max retries count.
                     this.activePromises--;
+                    this.promisesData[index].Status = PromiseStatus.Failed;
                     this.failedPromiseIndexes.push(index);
                     if (this.onSinglePromiseFinished != null) {
                         this.onSinglePromiseFinished(this.TotalCount, this.FinishedCount);

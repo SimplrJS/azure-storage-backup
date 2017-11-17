@@ -4,6 +4,7 @@
   "description": "Exports blobs from azure backend.",
   "main": "index.js",
   "scripts": {
+    "exporter": "node ./dist/cli/cli.js",
     "build": "tsc -p .",
     "tslint": "tslint --project . --config ./tslint.json",
     "watch": "tsc -w",
@@ -31,14 +32,20 @@
     "typescript": "^2.6.1"
   },
   "dependencies": {
+    "@types/cli-table2": "^0.2.1",
+    "@types/filesize": "^3.2.15",
     "@types/fs-extra": "^4.0.2",
     "@types/inquirer": "0.0.35",
     "@types/node": "^8.0.34",
+    "@types/progress": "^2.0.0",
     "@types/yargs": "^8.0.2",
     "azure-storage": "^2.6.0",
+    "cli-table2": "^0.2.0",
     "fast-glob": "^1.0.1",
+    "filesize": "^3.5.11",
     "fs-extra": "^4.0.2",
     "inquirer": "^3.3.0",
+    "progress": "^2.0.0",
     "yargs": "^10.0.3"
   }
 }

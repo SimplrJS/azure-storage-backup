@@ -14,7 +14,35 @@ export function GetVersion(): string {
     return PACKAGE_JSON.version;
 }
 
-export const DefaultLogger = new Logger(Logger.LogLevels.INFO);
+export function ConstructLoggerToFile(logLevel: string = Logger.LogLevels.INFO, logPath?: string): Logger {
+    const logDestinationPath = logPath || path.join(process.cwd(), ".extractor-log");
+    fs.removeSync(logDestinationPath);
+
+    return new Logger(Logger.LogLevels.DEBUG, (level, message) => {
+        const logLine = ConstructLogLine(level, message);
+
+        switch (level) {
+            case Logger.LogLevels.NOTICE: {
+                console.info(logLine);
+            }
+            case Logger.LogLevels.CRITICAL: {
+                console.error(logLine);
+            }
+        }
+
+        fs.appendFileSync(logDestinationPath, logLine + EOL);
+    });
+}
+
+export function ConstructLogLine(level: string, message: string): string {
+    const time = new Date();
+    const localDate = time.toLocaleDateString();
+    const localTime = time.toLocaleTimeString();
+
+    return `[${localDate} ${localTime}]${level} : ${message}`;
+}
+
+export const DefaultLogger = ConstructLoggerToFile();
 
 export const DEFAULT_CLI_ARGUMENTS = {
     config: "./extractor.config.json"
