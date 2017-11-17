@@ -9,6 +9,8 @@ import { CLIArgumentsObject } from "./cli-contracts";
 import { GetVersion } from "./cli-helpers";
 
 export const CLIHandler = yargs
+    .showHelpOnFail(true)
+    .demandCommand(1, "You need at least one command before moving on")
     .help("h", "Show help")
     .alias("h", "help")
     .version(`Current version: ${GetVersion()}`)
