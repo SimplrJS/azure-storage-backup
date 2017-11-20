@@ -1,4 +1,5 @@
 import * as fs from "fs";
+import { BlobService } from "azure-storage";
 import { Arguments } from "yargs";
 
 export interface BasePackage {
@@ -20,3 +21,5 @@ export interface CLIArgumentsObject extends Arguments {
 export interface LocalFileDto extends fs.Stats {
     path: string;
 }
+
+export type BlobResultGetter<TItemType> = (item: TItemType) => BlobService.BlobResult;

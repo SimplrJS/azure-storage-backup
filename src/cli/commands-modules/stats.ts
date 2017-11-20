@@ -10,7 +10,8 @@ import {
     DefaultLogger,
     IsContainerNameValid,
     BlobsListTableConfig,
-    ConstructStatisticsTableRow
+    ConstructStatisticsTableRow,
+    DefaultBlobResultGetter
 } from "../cli-helpers";
 import { StorageAccountManager } from "../../api/managers/storage-account/storage-account-manager";
 import { PromiseDto } from "../../api/promises/async-manager";
@@ -42,9 +43,9 @@ class StatisticsCommandClass implements CommandModule {
             if (IsContainerNameValid(options.container)) {
                 const containerBlobs = await storageAccountManager.FetchContainerBlobsList(options.container);
                 const table = new Table(BlobsListTableConfig) as Table.HorizontalTable;
-                const row = ConstructStatisticsTableRow(options.container, containerBlobs, options.showInBytes);
+                const row = ConstructStatisticsTableRow(options.container, containerBlobs, options.showInBytes, DefaultBlobResultGetter);
                 table.push(row);
-                DefaultLogger.notice(EOL + table.toString());
+                DefaultLogger.notice(EOL + table);
             } else {
                 const containersBlobs = await storageAccountManager.FetchContainersBlobsList();
                 const successTitle = `Successfully fetched blobs lists (${containersBlobs.Succeeded.length}):`;
@@ -85,11 +86,16 @@ class StatisticsCommandClass implements CommandModule {
         const table = new Table(BlobsListTableConfig) as Table.HorizontalTable;
 
         for (const blobsResultsList of containersBlobsList) {
-            const row = ConstructStatisticsTableRow(blobsResultsList.Data.name, blobsResultsList.Result, showInBytes);
+            const row = ConstructStatisticsTableRow(
+                blobsResultsList.Data.name,
+                blobsResultsList.Result,
+                showInBytes,
+                DefaultBlobResultGetter
+            );
             table.push(row);
         }
 
-        return title + EOL + table.toString();
+        return title + EOL + table;
     }
 }
 

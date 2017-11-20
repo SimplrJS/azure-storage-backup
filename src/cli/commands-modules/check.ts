@@ -9,7 +9,8 @@ import {
     ReadConfig,
     IsContainerNameValid,
     BlobsListTableConfig,
-    ConstructStatisticsTableRow
+    ConstructStatisticsTableRow,
+    DefaultBlobResultGetter
 } from "../cli-helpers";
 import { CLIArgumentsObject } from "../cli-contracts";
 import { StorageAccountManager } from "../../api/managers/storage-account/storage-account-manager";
@@ -32,9 +33,14 @@ class CheckWithAzureCommandClass implements CommandModule {
                 const missingContainerBlobsList = await storageAccountManager.ValidateContainerFiles(options.container);
                 if (missingContainerBlobsList.length > 0) {
                     const table = new Table(BlobsListTableConfig) as Table.HorizontalTable;
-                    const row = ConstructStatisticsTableRow(options.container, missingContainerBlobsList, options.showInBytes);
+                    const row = ConstructStatisticsTableRow(
+                        options.container,
+                        missingContainerBlobsList,
+                        options.showInBytes,
+                        DefaultBlobResultGetter
+                    );
                     table.push(row);
-                    DefaultLogger.notice(EOL + table.toString());
+                    DefaultLogger.notice(`Check statistics:${EOL}${table}`);
                 } else {
                     DefaultLogger.notice(`"${options.container}" has no missing blobs.`);
                 }
@@ -55,15 +61,29 @@ class CheckWithAzureCommandClass implements CommandModule {
         showInBytes: boolean = false
     ): string {
         const table = new Table(BlobsListTableConfig) as Table.HorizontalTable;
+        let hasMissingBlobs = false;
 
         for (const blobsResultsList of containersBlobsList) {
             if (blobsResultsList.Entries.length > 0) {
-                const row = ConstructStatisticsTableRow(blobsResultsList.ContainerName, blobsResultsList.Entries, showInBytes);
+                if (!hasMissingBlobs) {
+                    hasMissingBlobs = true;
+                }
+
+                const row = ConstructStatisticsTableRow(
+                    blobsResultsList.ContainerName,
+                    blobsResultsList.Entries,
+                    showInBytes,
+                    DefaultBlobResultGetter
+                );
                 table.push(row);
             }
         }
 
-        return title + EOL + table.toString();
+        if (hasMissingBlobs) {
+            return title + EOL + table;
+        } else {
+            return "No missing blobs found.";
+        }
     }
 }
 

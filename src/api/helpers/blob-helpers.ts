@@ -1,5 +1,4 @@
 import * as path from "path";
-import * as fs from "fs-extra";
 import fastGlob, { IOptions } from "fast-glob";
 import { BlobService, common } from "azure-storage";
 import { Writable } from "stream";

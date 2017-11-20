@@ -1,4 +1,6 @@
 import { BlobService, StorageHost } from "azure-storage";
+import { BlobDownloadDto } from "../../contracts/blob-helpers-contracts";
+import { AsyncSessionResultDto } from "../../promises/async-manager";
 
 export interface ItemsList<T> {
     Entries: T[];
@@ -39,3 +41,6 @@ export interface ProgressTokens {
     LastActionTitle: string;
     LogLevel: string;
 }
+
+export type ContainerDownloadedBlobsResult = AsyncSessionResultDto<BlobService.BlobResult, BlobDownloadDto, BlobContext | undefined>;
+export type ContainersDownloadedBlobsResult = ContainerDownloadedBlobsResult[];

@@ -5,7 +5,7 @@ import * as FileSize from "filesize";
 import { EOL } from "os";
 import { Logger, BlobService } from "azure-storage";
 
-import { BasePackage } from "./cli-contracts";
+import { BasePackage, BlobResultGetter } from "./cli-contracts";
 import { ConfigData } from "../api/managers/storage-account/storage-account-contracts";
 
 // #region Package helpers
@@ -87,14 +87,16 @@ export const BlobsListTableConfig: Table.TableConstructorOptions = {
     colWidths: [30, 15, 40]
 };
 
-export function ConstructStatisticsTableRow(
+export function ConstructStatisticsTableRow<TItemType>(
     containerName: string,
-    blobsResults: BlobService.BlobResult[],
-    showInBytes: boolean = false
+    items: TItemType[],
+    showInBytes: boolean = false,
+    blobResultGetter: BlobResultGetter<TItemType>
 ): Table.HorizontalTableRow {
     let totalSize = 0;
 
-    for (const blobResult of blobsResults) {
+    for (const item of items) {
+        const blobResult = blobResultGetter(item);
         const contentLength = Number(blobResult.contentLength);
         if (isFinite(contentLength)) {
             totalSize += contentLength;
@@ -102,6 +104,8 @@ export function ConstructStatisticsTableRow(
     }
 
     const fileSize = showInBytes ? `${totalSize} B` : FileSize(totalSize);
-    return [containerName, blobsResults.length, fileSize];
+    return [containerName, items.length, fileSize];
 }
+
+export const DefaultBlobResultGetter: BlobResultGetter<BlobService.BlobResult> = item => item;
 // #endregion CLI tables helpers

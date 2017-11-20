@@ -9,9 +9,10 @@ export interface PromiseDto<TData, TResult> {
     Result: TResult;
 }
 
-export interface AsyncSessionResultDto<TData, TResult> {
+export interface AsyncSessionResultDto<TData, TResult, TContext = void> {
     Succeeded: Array<PromiseDto<TData, TResult>>;
     Failed: Array<PromiseDto<TData, undefined>>;
+    Context?: TContext;
 }
 
 export enum PromiseStatus {
@@ -59,8 +60,8 @@ export class AsyncManager<TData, TResult = void, TContext = void> {
     private onSinglePromiseFinished: PromiseNotifier | undefined;
 
     private resolve: (
-        value?: AsyncSessionResultDto<TData, TResult> |
-            PromiseLike<AsyncSessionResultDto<TData, TResult>> |
+        value?: AsyncSessionResultDto<TData, TResult, TContext> |
+            PromiseLike<AsyncSessionResultDto<TData, TResult, TContext>> |
             undefined
     ) => void;
     private reject: (error?: any) => void;
@@ -104,7 +105,7 @@ export class AsyncManager<TData, TResult = void, TContext = void> {
         this.promisesData = [];
     }
 
-    public async Start(promisesData: TData[], context?: TContext): Promise<AsyncSessionResultDto<TData, TResult>> {
+    public async Start(promisesData: TData[], context?: TContext): Promise<AsyncSessionResultDto<TData, TResult, TContext>> {
         if (this.isStarted) {
             throw new Error(`Cannot start AsyncManager in the middle of process.`);
         }
@@ -120,7 +121,7 @@ export class AsyncManager<TData, TResult = void, TContext = void> {
             Result: undefined
         }));
 
-        return new Promise<AsyncSessionResultDto<TData, TResult>>((resolve, reject) => {
+        return new Promise<AsyncSessionResultDto<TData, TResult, TContext>>((resolve, reject) => {
             this.resolve = resolve;
             this.reject = reject;
 
@@ -131,9 +132,10 @@ export class AsyncManager<TData, TResult = void, TContext = void> {
     private activatePromises(): void {
         if (this.FinishedCount === this.promisesData.length) {
             // this.promiseData[index].Result will always defined, because we know, that this index has finished.
-            const results: AsyncSessionResultDto<TData, TResult> = {
+            const results: AsyncSessionResultDto<TData, TResult, TContext> = {
                 Succeeded: this.SucceededPromises,
-                Failed: this.FailedPromises
+                Failed: this.FailedPromises,
+                Context: this.context
             };
 
             this.resolve(results);
@@ -190,6 +192,7 @@ export class AsyncManager<TData, TResult = void, TContext = void> {
                     // Reached max retries count.
                     this.activePromises--;
                     this.promisesData[index].Status = PromiseStatus.Failed;
+                    this.promisesData[index].Error = error;
                     this.failedPromiseIndexes.push(index);
                     if (this.onSinglePromiseFinished != null) {
                         this.onSinglePromiseFinished(this.TotalCount, this.FinishedCount);

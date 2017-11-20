@@ -10,7 +10,9 @@ import {
     BlobContext,
     ProgressTokens,
     ContainerItemsList,
-    ContainersList
+    ContainersList,
+    ContainersDownloadedBlobsResult,
+    ContainerDownloadedBlobsResult
 } from "./storage-account-contracts";
 import { ContainerManager } from "../container-manager";
 import { BlobManager } from "../blob-manager";
@@ -240,13 +242,11 @@ export class StorageAccountManager {
     // #endregion Files validation
 
     // #region Blobs download
-    public async DownloadContainerBlobs(
-        containerName: string
-    ): Promise<AsyncSessionResultDto<BlobService.BlobResult, BlobDownloadDto> | undefined> {
+    public async DownloadContainerBlobs(containerName: string): Promise<ContainerDownloadedBlobsResult | undefined> {
         const downloadsList = await this.ValidateContainerFiles(containerName, true);
 
         if (downloadsList.length === 0) {
-            this.logger.notice(`All container "${containerName}" blobs already downloaded.`);
+            // All blobs downloaded
             return undefined;
         }
 
@@ -275,16 +275,23 @@ export class StorageAccountManager {
         return results;
     }
 
-    public async DownloadContainersBlobs(): Promise<Array<AsyncSessionResultDto<BlobService.BlobResult, BlobDownloadDto>>> {
+    public async DownloadContainersBlobs(): Promise<ContainersDownloadedBlobsResult> {
         // Get blob container list, and check one by one.
         const containers = await this.FetchAllContainers();
 
-        const results: Array<AsyncSessionResultDto<BlobService.BlobResult, BlobDownloadDto>> = [];
+        const results: ContainersDownloadedBlobsResult = [];
 
         for (let i = 0; i < containers.length; i++) {
-            this.logger.info(`Downloading "${containers[i].name}" blobs. ${i} / ${containers.length} containers blobs downloaded.`);
-            await this.DownloadContainerBlobs(containers[i].name);
-            this.progressTick();
+            const containerName = containers[i].name;
+
+            this.logger.notice(`Downloading "${containerName}" blobs. ${i} / ${containers.length} containers finished.`);
+            const containerDownloadResults = await this.DownloadContainerBlobs(containerName);
+
+            if (containerDownloadResults != null) {
+                results.push(containerDownloadResults);
+            } else {
+                this.logger.notice(`All container "${containerName}" blobs already downloaded.`);
+            }
         }
 
         return results;
