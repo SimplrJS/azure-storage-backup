@@ -4,7 +4,7 @@ import { CommandModule } from "yargs";
 import { writeJSON, readJSON } from "fs-extra";
 import { CLIArgumentsObject } from "../cli-contracts";
 import { ConfigData } from "../../api/managers/storage-account/storage-account-contracts";
-import { DEFAULT_CLI_ARGUMENTS, DefaultLogger } from "../cli-helpers";
+import { DEFAULT_CLI_VALUES, ResolveConfigPath, ConstructDefaultLogger, ResolveLogPath, ResolveConfigSchemaValue } from "../cli-helpers";
 
 export enum ConnectionType {
     AccountNameAndKey = "accountNameAndKey",
@@ -35,20 +35,26 @@ class ConfigInitializationCommandClass implements CommandModule {
         return "Value is not a positive integer.";
     }
 
+    private get defaultConfigValues(): ConfigData {
+        return {
+            storageAccount: "",
+            storageAccessKey: "",
+            storageHost: undefined,
+            outDir: process.cwd(),
+            maxRetriesCount: 3,
+            simultaneousDownloadsCount: 10,
+            logPath: ResolveLogPath()
+        };
+    }
+
     public handler = async (options: CLIArgumentsObject): Promise<void> => {
-        const cwdConfigPath = path.join(process.cwd(), DEFAULT_CLI_ARGUMENTS.config);
+        const currentConfigPath = ResolveConfigPath(options.config);
+
         let initialConfig: ConfigData;
         try {
-            initialConfig = await readJSON(cwdConfigPath) as ConfigData;
+            initialConfig = await readJSON(currentConfigPath) as ConfigData;
         } catch (error) {
-            initialConfig = {
-                storageAccount: "",
-                storageAccessKey: "",
-                storageHost: undefined,
-                verbose: false,
-                outDir: process.cwd(),
-                retriesCount: 5
-            };
+            initialConfig = this.defaultConfigValues;
         }
 
         const azureStorageQuestions: Questions = [
@@ -73,12 +79,6 @@ class ConfigInitializationCommandClass implements CommandModule {
                 default: initialConfig.storageHost
             },
             {
-                type: "confirm",
-                name: "verbose",
-                message: "Verbose:",
-                default: initialConfig.verbose
-            },
-            {
                 type: "input",
                 name: "outDir",
                 message: "Save downloaded files to directory:",
@@ -87,9 +87,9 @@ class ConfigInitializationCommandClass implements CommandModule {
             },
             {
                 type: "input",
-                name: "retriesCount",
-                message: "Retries count:",
-                default: initialConfig.retriesCount,
+                name: "maxRetriesCount",
+                message: "Max retries count for failed operations:",
+                default: initialConfig.maxRetriesCount,
                 validate: this.requirePositiveInteger
             },
             {
@@ -102,16 +102,25 @@ class ConfigInitializationCommandClass implements CommandModule {
         ];
 
         const azureStorageAnswers = await prompt(azureStorageQuestions);
-        const { configPath, ...config } = azureStorageAnswers as AzureStorageAnswersDto;
-        config.storageHost = azureStorageAnswers.storageHost || undefined;
+        const { configPath, ...updatedConfigValues } = azureStorageAnswers as AzureStorageAnswersDto;
 
-        const outputPath = path.join(configPath, DEFAULT_CLI_ARGUMENTS.config);
+        updatedConfigValues.storageHost = azureStorageAnswers.storageHost || undefined;
+
+        // Merging new values with existing
+        const config = {
+            ...initialConfig,
+            ...updatedConfigValues,
+            $schema: ResolveConfigSchemaValue()
+        };
+
+        const outputPath = path.join(configPath, DEFAULT_CLI_VALUES.ConfigFileName);
+        const logger = ConstructDefaultLogger(config.logPath);
 
         try {
-            await writeJSON(outputPath, config);
-            DefaultLogger.log("Successfully saved config to:", outputPath);
+            await writeJSON(outputPath, config, { spaces: 4 });
+            logger.notice(`Successfully saved config to: "${outputPath}"`);
         } catch (error) {
-            DefaultLogger.error(error);
+            logger.critical(error);
         }
     }
 }

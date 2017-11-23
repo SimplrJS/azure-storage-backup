@@ -28,9 +28,11 @@ export interface ConfigData {
     storageAccount: string;
     storageAccessKey: string;
     storageHost?: StorageHost;
-    verbose: boolean;
     outDir: string;
-    retriesCount: number;
+    logPath: string;
+    maxRetriesCount: number;
+    simultaneousDownloadsCount: number;
+    $schema?: string;
 }
 
 export interface BlobContext {

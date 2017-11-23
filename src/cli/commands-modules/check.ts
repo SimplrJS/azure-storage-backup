@@ -1,16 +1,17 @@
 import * as Table from "cli-table2";
-import { BlobService } from "azure-storage";
+import { BlobService, Logger } from "azure-storage";
 import { CommandModule } from "yargs";
 import { EOL } from "os";
 
 import {
-    DefaultLogger,
     ResolveConfigPath,
     ReadConfig,
     IsContainerNameValid,
     BlobsListTableConfig,
     ConstructStatisticsTableRow,
-    DefaultBlobResultGetter
+    DefaultBlobResultGetter,
+    ConstructDefaultLogger,
+    ConstructLogLine
 } from "../cli-helpers";
 import { CLIArgumentsObject } from "../cli-contracts";
 import { StorageAccountManager } from "../../api/managers/storage-account/storage-account-manager";
@@ -24,34 +25,41 @@ class CheckWithAzureCommandClass implements CommandModule {
     public handler = async (options: CLIArgumentsObject): Promise<void> => {
         try {
             const configPath = ResolveConfigPath(options.config);
-            const config = ReadConfig(configPath, DefaultLogger);
+            console.info(`Reading config from "${configPath}".`);
+            const config = ReadConfig(configPath);
+            const defaultLogger = ConstructDefaultLogger(config.logPath);
 
-            const storageAccountManager = new StorageAccountManager(config, DefaultLogger, options.noCache);
-            await storageAccountManager.CheckServiceStatus();
+            try {
 
-            if (IsContainerNameValid(options.container)) {
-                const missingContainerBlobsList = await storageAccountManager.ValidateContainerFiles(options.container);
-                if (missingContainerBlobsList.length > 0) {
-                    const table = new Table(BlobsListTableConfig) as Table.HorizontalTable;
-                    const row = ConstructStatisticsTableRow(
-                        options.container,
-                        missingContainerBlobsList,
-                        options.showInBytes,
-                        DefaultBlobResultGetter
-                    );
-                    table.push(row);
-                    DefaultLogger.notice(`Check statistics:${EOL}${table}`);
+                const storageAccountManager = new StorageAccountManager(config, defaultLogger, options.noCache);
+                await storageAccountManager.CheckServiceStatus();
+
+                if (IsContainerNameValid(options.container)) {
+                    const missingContainerBlobsList = await storageAccountManager.ValidateContainerFiles(options.container);
+                    if (missingContainerBlobsList.length > 0) {
+                        const table = new Table(BlobsListTableConfig) as Table.HorizontalTable;
+                        const row = ConstructStatisticsTableRow(
+                            options.container,
+                            missingContainerBlobsList,
+                            options.showInBytes,
+                            DefaultBlobResultGetter
+                        );
+                        table.push(row);
+                        defaultLogger.notice(`Check statistics:${EOL}${table}`);
+                    } else {
+                        defaultLogger.notice(`"${options.container}" has no missing blobs.`);
+                    }
                 } else {
-                    DefaultLogger.notice(`"${options.container}" has no missing blobs.`);
+                    const missingContainersBlobsList = await storageAccountManager.ValidateContainersFiles();
+                    const tableTitle = "Missing blobs found:";
+                    const outputString = this.constructMissingBlobsListsString(tableTitle, missingContainersBlobsList, options.showInBytes);
+                    defaultLogger.notice(outputString);
                 }
-            } else {
-                const missingContainersBlobsList = await storageAccountManager.ValidateContainersFiles();
-                const tableTitle = "Missing blobs found:";
-                const outputString = this.constructMissingBlobsListsString(tableTitle, missingContainersBlobsList, options.showInBytes);
-                DefaultLogger.notice(outputString);
+            } catch (error) {
+                defaultLogger.emergency(`Failed to check correlation between data.${EOL}${error}`);
             }
-        } catch (error) {
-            DefaultLogger.emergency(`Failed to check correlation between data.${EOL}${error}`);
+        } catch (configError) {
+            console.error(ConstructLogLine(Logger.LogLevels.CRITICAL, configError));
         }
     }
 

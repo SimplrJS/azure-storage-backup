@@ -54,7 +54,7 @@ export class StorageAccountManager {
     // #region Storage account actions
     public async CheckServiceStatus(): Promise<void> {
         try {
-            this.logger.info(`Checking service connectivity with storage account "${this.config.storageAccount}".`);
+            this.logger.notice(`Checking service connectivity with storage account "${this.config.storageAccount}".`);
             await GetServiceProperties(this.blobService);
             this.logger.notice(`Successfully connected to storage account "${this.config.storageAccount}".`);
         } catch (error) {
@@ -100,7 +100,11 @@ export class StorageAccountManager {
         try {
             const containersList = await this.FetchAllContainers();
             this.logger.notice(`Fetching blobs list from ${containersList.length} containers.`);
-            const asyncManager = new AsyncManager<BlobService.ContainerResult, BlobService.BlobResult[]>(this.blobsListFetchHandler);
+            const asyncManager = new AsyncManager<BlobService.ContainerResult, BlobService.BlobResult[]>(
+                this.blobsListFetchHandler,
+                undefined,
+                this.config.maxRetriesCount
+            );
 
             if (this.showProgress) {
                 this.progress = new Progress(this.progressFormat, {
@@ -250,7 +254,11 @@ export class StorageAccountManager {
             return undefined;
         }
 
-        const asyncManager = new AsyncManager<BlobService.BlobResult, BlobDownloadDto, BlobContext>(this.downloadBlobsHandler, 5);
+        const asyncManager = new AsyncManager<BlobService.BlobResult, BlobDownloadDto, BlobContext>(
+            this.downloadBlobsHandler,
+            this.config.simultaneousDownloadsCount,
+            this.config.maxRetriesCount
+        );
 
         if (this.showProgress) {
             this.progress = new Progress(this.progressFormat, {
@@ -390,7 +398,7 @@ export class StorageAccountManager {
     // #region Progress and logging
     private progressTick(tokens?: ProgressTokens): void {
         if (this.progress != null) {
-            this.progress!.tick(tokens);
+            this.progress.tick(tokens);
         }
     }
 

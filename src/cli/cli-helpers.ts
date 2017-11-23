@@ -19,8 +19,8 @@ export function GetVersion(): string {
 // #endregion Package helpers
 
 // #region Logging helpers
-export function ConstructLoggerToFile(logLevel: string = Logger.LogLevels.INFO, logPath?: string): Logger {
-    const logDestinationPath = logPath || path.join(process.cwd(), ".extractor-log");
+export function ConstructDefaultLogger(logPath?: string): Logger {
+    const logDestinationPath = ResolveLogPath(logPath);
     fs.removeSync(logDestinationPath);
 
     return new Logger(Logger.LogLevels.DEBUG, (level, message) => {
@@ -49,13 +49,12 @@ export function ConstructLogLine(level: string, message: string): string {
     return `[${localDate} ${localTime}]${level} : ${message}`;
 }
 
-export const DefaultLogger = ConstructLoggerToFile();
-
 // #endregion Logging helpers
 
 // #region CLI input
-export const DEFAULT_CLI_ARGUMENTS = {
-    config: "./extractor.config.json"
+export const DEFAULT_CLI_VALUES = {
+    ConfigFileName: "extractor.config.json",
+    LogFileName: ".extractor-log"
 };
 
 export function IsContainerNameValid(containerName: any): containerName is string {
@@ -64,22 +63,54 @@ export function IsContainerNameValid(containerName: any): containerName is strin
 // #endregion CLI input
 
 // #region Config helpers
-export function ReadConfig(configPath: string, logger: Logger): ConfigData {
+export function ReadConfig(configPath: string): ConfigData {
     try {
-        logger.info(`Reading config from "${configPath}".`);
         const configString = fs.readFileSync(configPath).toString();
         return JSON.parse(configString) as ConfigData;
     } catch (error) {
-        logger.emergency(`Failed to load config file from \"${configPath}\". ${EOL} ${error}`);
-        throw error;
+        throw new Error(`Failed to load config file from \"${configPath}\". ${EOL} ${error}`);
     }
 }
 
-export function ResolveConfigPath(suppliedParameter: string | boolean | undefined): string {
-    const configPath = typeof suppliedParameter === "string" ? suppliedParameter : DEFAULT_CLI_ARGUMENTS.config;
-    return path.join(process.cwd(), configPath);
+export function ResolveConfigPath(configPath: string | boolean | undefined): string {
+    return ResolvePath(configPath, DEFAULT_CLI_VALUES.ConfigFileName, "Wrong config path:");
 }
+
+export function ResolveLogPath(logPath?: string | boolean | undefined): string {
+    return ResolvePath(logPath, DEFAULT_CLI_VALUES.LogFileName, "Wrong log path:");
+}
+
+export function ResolveConfigSchemaPath(): string {
+    return path.resolve(__dirname, "../", CONFIG_JSON_SCHEMA_FILE_NAME);
+}
+
+export function ResolveConfigSchemaValue(): string {
+    return `file:///${ResolveConfigSchemaPath()}`;
+}
+
+export const CONFIG_JSON_SCHEMA_FILE_NAME = "schema.extractor.config.json";
+
 // #endregion Config helpers
+
+// #region FS helpers
+
+export function ResolvePath(suppliedPath: string | boolean | undefined, defaultFileName: string, errorMessage: string): string {
+    if (!suppliedPath) {
+        return path.join(process.cwd(), defaultFileName);
+    }
+
+    if (typeof suppliedPath !== "string") {
+        throw new Error(`${errorMessage} "${suppliedPath}".`);
+    }
+
+    if (path.isAbsolute(suppliedPath)) {
+        return suppliedPath;
+    } else {
+        return path.join(process.cwd(), suppliedPath);
+    }
+}
+
+// #endregion FS helpers
 
 // #region CLI tables helpers
 export const BlobsListTableConfig: Table.TableConstructorOptions = {

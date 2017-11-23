@@ -1,0 +1,58 @@
+{
+    "title": "Configuration file of Azure blob exporter.",
+    "definitions": {},
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "$id": "./schema.extractor.config.json",
+    "type": "object",
+    "properties": {
+        "storageAccount": {
+            "$id": "/properties/storageAccount",
+            "type": "string",
+            "title": "Storage account name.",
+            "description": "Name of your Azure storage account."
+        },
+        "storageAccessKey": {
+            "$id": "/properties/storageAccessKey",
+            "type": "string",
+            "title": "Storage access key.",
+            "description": "A key to access your Azure storage account."
+        },
+        "storageHost": {
+            "$id": "/properties/storageHost",
+            "type": "string",
+            "title": "Storage host."
+        },
+        "outDir": {
+            "$id": "/properties/outDir",
+            "type": "string",
+            "title": "Output directory.",
+            "description": "An output directory for downloaded blobs from your storage account.",
+            "default": "Current working directory."
+        },
+        "maxRetriesCount": {
+            "$id": "/properties/maxRetriesCount",
+            "type": "integer",
+            "title": "Max retries count.",
+            "description": "Max retries count for failed operations (container blobs list fetching or blobs downloading).",
+            "default": 3
+        },
+        "logPath": {
+            "$id": "/properties/logPath",
+            "type": "string",
+            "title": "Path to log file.",
+            "default": "Current working directory."
+        },
+        "simultaneousDownloadsCount": {
+            "$id": "/properties/simultaneousDownloads",
+            "type": "integer",
+            "title": "Simultaneous downloads count.",
+            "description": "Count of concurrently performed blob downloads of a container.",
+            "default": 5
+        }
+    },
+    "required": [
+        "storageAccount",
+        "storageAccessKey",
+        "outDir"
+    ]
+}
