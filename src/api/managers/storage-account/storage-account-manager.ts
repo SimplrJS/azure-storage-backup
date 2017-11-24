@@ -1,14 +1,13 @@
 import * as fs from "fs-extra";
 import * as path from "path";
-import * as Progress from "progress";
 import { tmpdir, EOL } from "os";
-import { Logger, createBlobService, BlobService } from "azure-storage";
+import { createBlobService, BlobService } from "azure-storage";
+import { LoggerBuilder, LogLevel } from "simplr-logger";
 
 import {
     ConfigData,
     BlobsList,
     BlobContext,
-    ProgressTokens,
     ContainerItemsList,
     ContainersList,
     ContainersDownloadedBlobsResult,
@@ -26,39 +25,47 @@ import {
 } from "../../helpers/blob-helpers";
 import { BlobDownloadDto } from "../../contracts/blob-helpers-contracts";
 import { PACKAGE_JSON } from "../../../cli/cli-helpers";
-
-const LOG_LEVELS = Logger.LogLevels;
+import { ProgressLoggingHandler } from "../../../cli/logger/progress-logging-handler";
 
 export class StorageAccountManager {
     constructor(
         private config: ConfigData,
-        private logger: Logger,
+        private logger: LoggerBuilder,
         private noCache: boolean = false,
         private showProgress: boolean = true
     ) {
         this.blobService = createBlobService(this.config.storageAccount, this.config.storageAccessKey, this.config.storageHost);
         this.containersManager = new ContainerManager(this.blobService);
+        this.progressLoggingHandler = new ProgressLoggingHandler();
+
+        this.logger.UpdateConfiguration(
+            configBuilder => configBuilder
+                .AddWriteMessageHandler({ Handler: this.progressLoggingHandler }, this.progressLogLevels)
+                .Build()
+        );
     }
 
     // #region Private variables
     private blobService: BlobService;
     private containersManager: ContainerManager;
 
-    private readonly progressFormat: string = "[:bar] :percent :current / :total :elapsed seconds elapsed. " +
-        ":eta seconds left. (:logLevel) :lastActionTitle";
-    private readonly progressWidth: number = 20;
+    private progressLoggingHandler: ProgressLoggingHandler;
 
-    private progress: Progress | undefined;
+    private readonly progressLogLevels: LogLevel[] = [
+        LogLevel.Debug,
+        LogLevel.Error,
+        LogLevel.Warning
+    ];
     // #endregion Private variables
 
     // #region Storage account actions
     public async CheckServiceStatus(): Promise<void> {
         try {
-            this.logger.notice(`Checking service connectivity with storage account "${this.config.storageAccount}".`);
+            this.logger.Info(`Checking service connectivity with storage account "${this.config.storageAccount}".`);
             await GetServiceProperties(this.blobService);
-            this.logger.notice(`Successfully connected to storage account "${this.config.storageAccount}".`);
+            this.logger.Info(`Successfully connected to storage account "${this.config.storageAccount}".`);
         } catch (error) {
-            this.logger.critical(`Failed to connect to storage account "${this.config.storageAccount}".`);
+            this.logger.Critical(`Failed to connect to storage account "${this.config.storageAccount}".`);
             throw error;
         }
     }
@@ -66,31 +73,28 @@ export class StorageAccountManager {
     public async FetchAllContainers(): Promise<BlobService.ContainerResult[]> {
         if (!this.noCache) {
             try {
-                this.logAction(LOG_LEVELS.INFO, `Searching for ${this.config.storageAccount} containers list in cache.`);
+                this.logger.Debug(`Searching for ${this.config.storageAccount} containers list in cache.`);
                 const cachedBlobsList = await this.GetCachedContainersList();
-                this.logAction(LOG_LEVELS.NOTICE, `"${this.config.storageAccount}" containers list fetched from cache.`);
+                this.logger.Info(`"${this.config.storageAccount}" containers list fetched from cache.`);
                 return cachedBlobsList.Entries;
             } catch (error) {
-                this.logAction(
-                    LOG_LEVELS.ERROR,
-                    `Failed to get cached containers list for storage account "${this.config.storageAccount}".`
-                );
+                this.logger.Error(`Failed to get cached containers list for storage account "${this.config.storageAccount}".`);
             }
         }
 
         try {
-            this.logger.info(`Fetching all containers from storage account "${this.config.storageAccount}".`);
+            this.logger.Debug(`Fetching all containers from storage account "${this.config.storageAccount}".`);
             const containersList = await this.containersManager.FetchAll();
-            this.logger.notice(`Fetched ${this.containersManager.Entries.length} container objects` +
+            this.logger.Info(`Fetched ${this.containersManager.Entries.length} container objects` +
                 ` from storage account "${this.config.storageAccount}".`);
 
-            this.logAction(LOG_LEVELS.INFO, `Caching ${containersList.length} "${this.config.storageAccount}" containers list entries.`);
+            this.logger.Debug(`Caching ${containersList.length} "${this.config.storageAccount}" containers list entries.`);
             await this.saveContainersList(containersList);
-            this.logger.notice(`${containersList.length} ${this.config.storageAccount} containers entries cached.`);
+            this.logger.Info(`${containersList.length} ${this.config.storageAccount} containers entries cached.`);
 
             return containersList;
         } catch (error) {
-            this.logger.alert(`Failed to fetch containers list of a storage account "${this.config.storageAccount}". ${EOL} ${error}}`);
+            this.logger.Error(`Failed to fetch containers list of a storage account "${this.config.storageAccount}". ${EOL} ${error}}`);
             throw error;
         }
     }
@@ -99,7 +103,7 @@ export class StorageAccountManager {
     public async FetchContainersBlobsList(): Promise<AsyncSessionResultDto<BlobService.ContainerResult, BlobService.BlobResult[]>> {
         try {
             const containersList = await this.FetchAllContainers();
-            this.logger.notice(`Fetching blobs list from ${containersList.length} containers.`);
+            this.logger.Info(`Fetching blobs list from ${containersList.length} containers.`);
             const asyncManager = new AsyncManager<BlobService.ContainerResult, BlobService.BlobResult[]>(
                 this.blobsListFetchHandler,
                 undefined,
@@ -107,22 +111,19 @@ export class StorageAccountManager {
             );
 
             if (this.showProgress) {
-                this.progress = new Progress(this.progressFormat, {
-                    total: containersList.length,
-                    width: this.progressWidth
-                });
+                this.progressLoggingHandler.NewProgress(containersList.length);
 
                 asyncManager.OnSinglePromiseFinished = () => {
-                    this.progressTick();
+                    this.progressLoggingHandler.Tick();
                 };
             }
 
-            this.progress = undefined;
+            this.progressLoggingHandler.ClearProgress();
             const result = await asyncManager.Start(containersList);
-            this.logger.notice(`Fetched blobs list from ${containersList.length} containers.`);
+            this.logger.Info(`Fetched blobs list from ${containersList.length} containers.`);
             return result;
         } catch (error) {
-            this.logger.alert(`Failed to fetch blobs list from ${this.config.storageAccount} containers.`);
+            this.logger.Error(`Failed to fetch blobs list from ${this.config.storageAccount} containers.`);
             return { Failed: [], Succeeded: [] };
         }
     }
@@ -132,25 +133,25 @@ export class StorageAccountManager {
         // Searching for container's blob list in cache
         if (!this.noCache) {
             try {
-                this.logAction(LOG_LEVELS.INFO, "Searching for container's blob list in cache.");
+                this.logger.Debug("Searching for container's blob list in cache.");
                 const cachedBlobsList = await this.GetContainerCachedBlobsList(containerName);
-                this.logAction(LOG_LEVELS.INFO, `"${containerName}" container's blob list fetched from cache.`);
+                this.logger.Debug(`"${containerName}" container's blob list fetched from cache.`);
                 blobsList = cachedBlobsList.Entries;
             } catch (error) {
-                this.logAction(LOG_LEVELS.ERROR, `Failed to get cached blob list for container "${containerName}".`);
+                this.logger.Error(`Failed to get cached blob list for container "${containerName}".`);
             }
         }
 
         // Getting container's list from Azure.
         if (blobsList == null) {
             const blobManager = new BlobManager(this.blobService, containerName);
-            this.logAction(LOG_LEVELS.INFO, `Fetching blobs list of "${containerName}" from Azure.`);
+            this.logger.Debug(`Fetching blobs list of "${containerName}" from Azure.`);
             try {
                 blobsList = await blobManager.FetchAll();
-                this.logAction(LOG_LEVELS.INFO, `"${containerName}" blobs list fetched successfully."`);
+                this.logger.Debug(`"${containerName}" blobs list fetched successfully."`);
                 await this.saveBlobsList(containerName, blobsList);
             } catch (error) {
-                this.logAction(LOG_LEVELS.ERROR, `Failed to fetch blobs list of ${containerName} from Azure.`);
+                this.logger.Error(`Failed to fetch blobs list of ${containerName} from Azure.`);
                 throw error;
             }
         }
@@ -161,16 +162,16 @@ export class StorageAccountManager {
 
     // #region Files validation
     public async ValidateContainerFiles(containerName: string, clearCache: boolean = false): Promise<BlobService.BlobResult[]> {
-        this.logAction(LOG_LEVELS.INFO, `Validating "${containerName}" downloaded files with blobs list.`);
+        this.logger.Debug(`Validating "${containerName}" downloaded files with blobs list.`);
 
         const downloadsListPath = this.GetContainerDownloadsListPath(containerName);
 
         if (!this.noCache) {
             try {
-                this.logAction(LOG_LEVELS.INFO, `Getting cached "${containerName}" downloads list.`);
+                this.logger.Debug(`Getting cached "${containerName}" downloads list.`);
                 const cachedDownloadsList = await fs.readJson(downloadsListPath) as BlobsList;
                 if (cachedDownloadsList != null) {
-                    this.logAction(LOG_LEVELS.INFO, `"${containerName}" cached downloads list found.`);
+                    this.logger.Debug(`"${containerName}" cached downloads list found.`);
 
                     if (clearCache) {
                         await fs.remove(downloadsListPath);
@@ -185,17 +186,17 @@ export class StorageAccountManager {
                     throw new Error("No content in cached file");
                 }
             } catch (error) {
-                this.logAction(LOG_LEVELS.WARNING, `Failed to get cached "${containerName}" container downloads list.`);
+                this.logger.Warn(`Failed to get cached "${containerName}" container downloads list.`);
             }
         }
 
         // Get cached blob-list by container
         const blobsList = await this.FetchContainerBlobsList(containerName);
 
-        this.logAction(LOG_LEVELS.INFO, `Getting "${containerName}" downloaded files list.`);
+        this.logger.Debug(`Getting "${containerName}" downloaded files list.`);
         const containerSourcePath = this.GetContainerDownloadsDestinationPath(containerName);
         const localFilesList = await GetLocalFilesList(containerSourcePath);
-        this.logAction(LOG_LEVELS.INFO, `"${containerName}" downloaded files list successfully fetched.`);
+        this.logger.Debug(`"${containerName}" downloaded files list successfully fetched.`);
 
         // Filtering missing blobs
         let downloadsList = new Array<BlobService.BlobResult>();
@@ -222,10 +223,7 @@ export class StorageAccountManager {
         const containers = await this.FetchAllContainers();
 
         if (this.showProgress) {
-            this.progress = new Progress(this.progressFormat, {
-                total: containers.length,
-                width: this.progressWidth
-            });
+            this.progressLoggingHandler.NewProgress(containers.length);
         }
 
         const results: Array<ContainerItemsList<BlobService.BlobResult>> = [];
@@ -236,10 +234,10 @@ export class StorageAccountManager {
                 ContainerName: container.name,
                 Entries: downloadsList
             });
-            this.progressTick();
+            this.progressLoggingHandler.Tick();
         }
 
-        this.progress = undefined;
+        this.progressLoggingHandler.ClearProgress();
 
         return results;
     }
@@ -261,24 +259,21 @@ export class StorageAccountManager {
         );
 
         if (this.showProgress) {
-            this.progress = new Progress(this.progressFormat, {
-                total: downloadsList.length,
-                width: this.progressWidth
-            });
+            this.progressLoggingHandler.NewProgress(downloadsList.length);
 
             asyncManager.OnSinglePromiseFinished = () => {
-                this.progressTick();
+                this.progressLoggingHandler.Tick();
             };
         }
 
         const results = await asyncManager.Start(downloadsList, { ContainerName: containerName });
 
-        this.logger.notice(
-            `"${containerName}" results: ${results.Succeeded.length} - downloads succeeded; ` +
-            `${results.Failed.length} - downloads failed.`
+        this.logger.Info(
+            `"${containerName}" results: ${results.Succeeded.length} - downloads succeeded`,
+            ` ${results.Failed.length} - downloads failed.`
         );
 
-        this.progress = undefined;
+        this.progressLoggingHandler.ClearProgress();
 
         return results;
     }
@@ -292,13 +287,15 @@ export class StorageAccountManager {
         for (let i = 0; i < containers.length; i++) {
             const containerName = containers[i].name;
 
-            this.logger.notice(`Downloading "${containerName}" blobs. ${i} / ${containers.length} containers finished.`);
+            this.logger.Info(`Downloading "${containerName}" blobs (${this.config.simultaneousDownloadsCount} concurrently). ` +
+                `${i} / ${containers.length} containers finished.`);
             const containerDownloadResults = await this.DownloadContainerBlobs(containerName);
 
             if (containerDownloadResults != null) {
                 results.push(containerDownloadResults);
             } else {
-                this.logger.notice(`All container "${containerName}" blobs already downloaded.`);
+                this.logger.Info(`All container "${containerName}" blobs already downloaded. ` +
+                    `${i + 1} / ${containers.length} containers finished.`);
             }
         }
 
@@ -323,7 +320,7 @@ export class StorageAccountManager {
     }
 
     private async saveBlobsList(containerName: string, entries: BlobService.BlobResult[]): Promise<void> {
-        this.logAction(LOG_LEVELS.INFO, `Caching ${entries.length} "${containerName}" blob list entries.`);
+        this.logger.Debug(`Caching ${entries.length} "${containerName}" blob list entries.`);
         const listPath = this.GetContainerBlobsListPath(containerName);
         const directory = path.parse(listPath).dir;
 
@@ -336,11 +333,11 @@ export class StorageAccountManager {
         };
 
         await fs.writeJSON(listPath, blobsList);
-        this.logAction(LOG_LEVELS.INFO, `${entries.length} "${containerName}" blob list entries. Successfully cached.`);
+        this.logger.Debug(`${entries.length} "${containerName}" blob list entries. Successfully cached.`);
     }
 
     private async saveContainerDownloadsList(containerName: string, entries: BlobService.BlobResult[]): Promise<void> {
-        this.logAction(LOG_LEVELS.INFO, `Caching ${entries.length} "${containerName}" missing blobs list entries.`);
+        this.logger.Debug(`Caching ${entries.length} "${containerName}" missing blobs list entries.`);
         const blobsListPath = this.GetContainerDownloadsListPath(containerName);
 
         const downloadsList: BlobsList = {
@@ -350,7 +347,7 @@ export class StorageAccountManager {
         };
 
         await fs.writeJSON(blobsListPath, downloadsList);
-        this.logAction(LOG_LEVELS.INFO, `${entries.length} "${containerName}" missing blobs list entries. Successfully cached.`);
+        this.logger.Debug(`${entries.length} "${containerName}" missing blobs list entries. Successfully cached.`);
     }
 
     public async GetContainerCachedBlobsList(containerName: string): Promise<BlobsList> {
@@ -395,33 +392,16 @@ export class StorageAccountManager {
     }
     //#endregion Data output paths
 
-    // #region Progress and logging
-    private progressTick(tokens?: ProgressTokens): void {
-        if (this.progress != null) {
-            this.progress.tick(tokens);
-        }
-    }
-
-    private logAction(logLevel: string, message: string): void {
-        this.logger.log(logLevel, message);
-
-        if (this.progress != null) {
-            this.progress.render({
-                lastActionTitle: message,
-                logLevel: logLevel
-            });
-        }
-    }
-
+    // #region Logging
     private outputDownloadsListNotification(downloadsListLength: number, containerName: string): void {
         if (downloadsListLength === 0) {
-            this.logAction(LOG_LEVELS.INFO, `All "${containerName}" blobs from Azure storage account ` +
+            this.logger.Debug(`All "${containerName}" blobs from Azure storage account ` +
                 `"${this.config.storageAccount}" are stored locally.`);
         } else {
-            this.logAction(LOG_LEVELS.ALERT, `Found ${downloadsListLength} blobs missing in "${containerName}"`);
+            this.logger.Warn(`Found ${downloadsListLength} blobs missing in "${containerName}"`);
         }
     }
-    // #endregion Progress and logging
+    // #endregion Logging
 
     // #region Promise handlers
     private downloadBlobsHandler: PromiseHandler<BlobService.BlobResult, BlobDownloadDto, BlobContext | undefined> =
@@ -436,7 +416,7 @@ export class StorageAccountManager {
             const writeStream = fs.createWriteStream(blobDestinationPath);
 
             try {
-                this.logAction(LOG_LEVELS.INFO, `Downloading "${blobResult.name}" from "${containerName}".`);
+                this.logger.Debug(`Downloading "${blobResult.name}" from "${containerName}".`);
 
                 const downloadedBlob = await GetBlobToStream(this.blobService, containerName, blobResult.name, writeStream);
 
@@ -447,7 +427,7 @@ export class StorageAccountManager {
                 }
 
                 if (blobContentLength === downloadedBlob.LocalContentLength) {
-                    this.logAction(LOG_LEVELS.INFO, `Container's "${containerName}" blob "${blobResult.name}" successfully downloaded.`);
+                    this.logger.Debug(`Container's "${containerName}" blob "${blobResult.name}" successfully downloaded.`);
                     writeStream.close();
                     return downloadedBlob;
                 } else {
@@ -455,7 +435,7 @@ export class StorageAccountManager {
                         `and locally (${downloadedBlob.LocalContentLength}) are different.`);
                 }
             } catch (error) {
-                this.logAction(LOG_LEVELS.ERROR, `Failed to download "${blobResult.name}" from "${containerName}"`);
+                this.logger.Error(`Failed to download "${blobResult.name}" from "${containerName}"`);
                 writeStream.close();
                 throw error;
             }

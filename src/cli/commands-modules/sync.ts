@@ -8,10 +8,9 @@ import {
     ReadConfig,
     IsContainerNameValid,
     BlobsListTableConfig,
-    ConstructStatisticsTableRow,
-    ConstructDefaultLogger,
-    ConstructLogLine
+    ConstructStatisticsTableRow
 } from "../cli-helpers";
+import { CLILogger, AddFileMessageHandler } from "../logger/cli-logger";
 import { StorageAccountManager } from "../../api/managers/storage-account/storage-account-manager";
 import { ContainersDownloadedBlobsResult } from "../../api/managers/storage-account/storage-account-contracts";
 
@@ -23,13 +22,13 @@ class SynchronizationCommandClass implements CommandModule {
     public handler = async (options: CLIArgumentsObject) => {
         try {
             const configPath = ResolveConfigPath(options.config);
-            console.info(`Reading config from "${configPath}".`);
+            CLILogger.Info(`Reading config from "${configPath}".`);
             const config = ReadConfig(configPath);
 
-            const logger = ConstructDefaultLogger(config.logPath);
+            AddFileMessageHandler(config.logPath, config.noLogFile);
 
             try {
-                const storageAccountManager = new StorageAccountManager(config, logger, options.noCache);
+                const storageAccountManager = new StorageAccountManager(config, CLILogger, options.noCache);
                 await storageAccountManager.CheckServiceStatus();
 
                 if (IsContainerNameValid(options.container)) {
@@ -44,33 +43,33 @@ class SynchronizationCommandClass implements CommandModule {
                             item => item.Result.Result
                         );
                         table.push(row);
-                        logger.notice(`Container downloads statistics:${EOL}${table}`);
+                        CLILogger.Info(`Container downloads statistics:${EOL}${table.toString()}`);
                     } else {
-                        logger.notice(`All container "${options.container}" blobs already downloaded.`);
+                        CLILogger.Info(`All container "${options.container}" blobs already downloaded.`);
                     }
                 } else {
                     const downloadedContainersBlobs = await storageAccountManager.DownloadContainersBlobs();
 
                     if (downloadedContainersBlobs.length === 0) {
-                        logger.notice(`Storage account "${config.storageAccount}" successfully synchronized.`);
+                        CLILogger.Info(`Storage account "${config.storageAccount}" successfully synchronized.`);
                     } else {
                         const succeededTitle = "Succeeded downloads statistics:";
                         const succeededListString = this.getSucceededBlobsListsString(succeededTitle, downloadedContainersBlobs);
-                        logger.notice(succeededListString);
+                        CLILogger.Info(succeededListString);
 
                         const failureTitle = "Failed downloads statistics:";
                         const failuresListString = this.getFailedBlobsListsString(failureTitle, downloadedContainersBlobs);
 
                         if (failuresListString) {
-                            logger.notice(failuresListString);
+                            CLILogger.Info(failuresListString);
                         }
                     }
                 }
             } catch (error) {
-                logger.critical(`Failed to download containers blobs. ${EOL}${error}`);
+                CLILogger.Critical(`Failed to download containers blobs. ${EOL}${error}`);
             }
         } catch (configError) {
-            console.error(ConstructLogLine(Logger.LogLevels.CRITICAL, configError));
+            CLILogger.Critical(Logger.LogLevels.CRITICAL, configError);
         }
     }
 
@@ -92,7 +91,7 @@ class SynchronizationCommandClass implements CommandModule {
             table.push(row);
         }
 
-        return title + EOL + table;
+        return title + EOL + table.toString();
     }
 
     private getFailedBlobsListsString(

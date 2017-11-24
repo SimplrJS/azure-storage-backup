@@ -4,7 +4,8 @@ import { CommandModule } from "yargs";
 import { writeJSON, readJSON } from "fs-extra";
 import { CLIArgumentsObject } from "../cli-contracts";
 import { ConfigData } from "../../api/managers/storage-account/storage-account-contracts";
-import { DEFAULT_CLI_VALUES, ResolveConfigPath, ConstructDefaultLogger, ResolveLogPath, ResolveConfigSchemaValue } from "../cli-helpers";
+import { DEFAULT_CLI_VALUES, ResolveConfigPath, ResolveLogPath, ResolveConfigSchemaValue } from "../cli-helpers";
+import { CLILogger, AddFileMessageHandler } from "../logger/cli-logger";
 
 export enum ConnectionType {
     AccountNameAndKey = "accountNameAndKey",
@@ -43,7 +44,8 @@ class ConfigInitializationCommandClass implements CommandModule {
             outDir: process.cwd(),
             maxRetriesCount: 3,
             simultaneousDownloadsCount: 10,
-            logPath: ResolveLogPath()
+            logPath: ResolveLogPath(),
+            noLogFile: false
         };
     }
 
@@ -52,10 +54,13 @@ class ConfigInitializationCommandClass implements CommandModule {
 
         let initialConfig: ConfigData;
         try {
-            initialConfig = await readJSON(currentConfigPath) as ConfigData;
+            CLILogger.Info(`Reading config from "${currentConfigPath}".`);
+            initialConfig = await readJSON(currentConfigPath);
         } catch (error) {
             initialConfig = this.defaultConfigValues;
         }
+
+        AddFileMessageHandler(initialConfig.logPath);
 
         const azureStorageQuestions: Questions = [
             {
@@ -113,14 +118,13 @@ class ConfigInitializationCommandClass implements CommandModule {
             $schema: ResolveConfigSchemaValue()
         };
 
-        const outputPath = path.join(configPath, DEFAULT_CLI_VALUES.ConfigFileName);
-        const logger = ConstructDefaultLogger(config.logPath);
+        const newConfigOutputPath = path.join(configPath, DEFAULT_CLI_VALUES.ConfigFileName);
 
         try {
-            await writeJSON(outputPath, config, { spaces: 4 });
-            logger.notice(`Successfully saved config to: "${outputPath}"`);
+            await writeJSON(newConfigOutputPath, config, { spaces: 4 });
+            CLILogger.Info(`Successfully saved config to: "${newConfigOutputPath}"`);
         } catch (error) {
-            logger.critical(error);
+            CLILogger.Critical(error);
         }
     }
 }

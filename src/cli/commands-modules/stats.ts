@@ -1,7 +1,7 @@
 import * as Table from "cli-table2";
 import { CommandModule, CommandBuilder } from "yargs";
 import { EOL } from "os";
-import { BlobService, Logger } from "azure-storage";
+import { BlobService } from "azure-storage";
 
 import { CLIArgumentsObject } from "../cli-contracts";
 import {
@@ -10,10 +10,9 @@ import {
     IsContainerNameValid,
     BlobsListTableConfig,
     ConstructStatisticsTableRow,
-    DefaultBlobResultGetter,
-    ConstructDefaultLogger,
-    ConstructLogLine
+    DefaultBlobResultGetter
 } from "../cli-helpers";
+import { CLILogger, AddFileMessageHandler } from "../logger/cli-logger";
 import { StorageAccountManager } from "../../api/managers/storage-account/storage-account-manager";
 import { PromiseDto } from "../../api/promises/async-manager";
 
@@ -36,13 +35,14 @@ class StatisticsCommandClass implements CommandModule {
     public handler = async (options: StatisticsCommandOptions): Promise<void> => {
         try {
             const configPath = ResolveConfigPath(options.config);
-            console.info(`Reading config from "${configPath}".`);
+
+            CLILogger.Info(`Reading config from "${configPath}".`);
             const config = ReadConfig(configPath);
 
-            const logger = ConstructDefaultLogger(config.logPath);
+            AddFileMessageHandler(config.logPath, config.noLogFile);
 
             try {
-                const storageAccountManager = new StorageAccountManager(config, logger, options.noCache);
+                const storageAccountManager = new StorageAccountManager(config, CLILogger, options.noCache);
                 await storageAccountManager.CheckServiceStatus();
 
                 if (IsContainerNameValid(options.container)) {
@@ -55,21 +55,29 @@ class StatisticsCommandClass implements CommandModule {
                         DefaultBlobResultGetter
                     );
                     table.push(row);
-                    logger.notice(EOL + table);
+                    CLILogger.Info(EOL + table.toString());
                 } else {
                     const containersBlobs = await storageAccountManager.FetchContainersBlobsList();
-                    const successTitle = `Successfully fetched blobs lists (${containersBlobs.Succeeded.length}):`;
-                    const successOutputString = this.logSucceededBlobsLists(successTitle, containersBlobs.Succeeded, options.showInBytes);
-                    logger.notice(successOutputString);
+                    const successfullyFetchedListTitle = `Successfully fetched blobs lists (${containersBlobs.Succeeded.length}):`;
+                    const successOutputString = this.resolveSucceededBlobsListsTableString(
+                        successfullyFetchedListTitle,
+                        containersBlobs.Succeeded,
+                        options.showInBytes
+                    );
+                    CLILogger.Info(successOutputString);
 
                     if (containersBlobs.Failed.length > 0) {
                         const failureTitle = `Failed to fetch ${containersBlobs.Failed.length} blobs lists:`;
-                        const failureOutputString = this.logFailedBlobsLists(failureTitle, containersBlobs.Failed, options.showInBytes);
-                        logger.notice(failureOutputString);
+                        const failureOutputString = this.resolveFailedBlobsListsTableString(
+                            failureTitle,
+                            containersBlobs.Failed,
+                            options.showInBytes
+                        );
+                        CLILogger.Info(failureOutputString);
                     }
                 }
             } catch (error) {
-                console.error(ConstructLogLine(Logger.LogLevels.CRITICAL, `Failed to get statistics of a storage account. ${EOL}${error}`));
+                CLILogger.Critical("Failed to get statistics of a storage account.", EOL, error);
             }
 
         } catch (configError) {
@@ -77,7 +85,7 @@ class StatisticsCommandClass implements CommandModule {
         }
     }
 
-    private logFailedBlobsLists(
+    private resolveFailedBlobsListsTableString(
         title: string,
         failuresList: Array<PromiseDto<BlobService.ContainerResult, undefined>>,
         showInBytes: boolean = false
@@ -91,7 +99,7 @@ class StatisticsCommandClass implements CommandModule {
         return finalString;
     }
 
-    private logSucceededBlobsLists(
+    private resolveSucceededBlobsListsTableString(
         title: string,
         containersBlobsList: Array<PromiseDto<BlobService.ContainerResult, BlobService.BlobResult[]>>,
         showInBytes: boolean = false
@@ -108,7 +116,7 @@ class StatisticsCommandClass implements CommandModule {
             table.push(row);
         }
 
-        return title + EOL + table;
+        return title + EOL + table.toString();
     }
 }
 

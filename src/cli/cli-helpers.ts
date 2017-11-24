@@ -3,7 +3,7 @@ import * as path from "path";
 import * as Table from "cli-table2";
 import * as FileSize from "filesize";
 import { EOL } from "os";
-import { Logger, BlobService } from "azure-storage";
+import { BlobService } from "azure-storage";
 
 import { BasePackage, BlobResultGetter } from "./cli-contracts";
 import { ConfigData } from "../api/managers/storage-account/storage-account-contracts";
@@ -17,39 +17,6 @@ export function GetVersion(): string {
     return PACKAGE_JSON.version;
 }
 // #endregion Package helpers
-
-// #region Logging helpers
-export function ConstructDefaultLogger(logPath?: string): Logger {
-    const logDestinationPath = ResolveLogPath(logPath);
-    fs.removeSync(logDestinationPath);
-
-    return new Logger(Logger.LogLevels.DEBUG, (level, message) => {
-        const logLine = ConstructLogLine(level, message);
-
-        switch (level) {
-            case Logger.LogLevels.NOTICE: {
-                console.info(logLine);
-                break;
-            }
-            case Logger.LogLevels.CRITICAL: {
-                console.error(logLine);
-                break;
-            }
-        }
-
-        fs.appendFileSync(logDestinationPath, logLine + EOL);
-    });
-}
-
-export function ConstructLogLine(level: string, message: string): string {
-    const time = new Date();
-    const localDate = time.toLocaleDateString();
-    const localTime = time.toLocaleTimeString();
-
-    return `[${localDate} ${localTime}]${level} : ${message}`;
-}
-
-// #endregion Logging helpers
 
 // #region CLI input
 export const DEFAULT_CLI_VALUES = {

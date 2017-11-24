@@ -32,16 +32,12 @@ export interface ConfigData {
     logPath: string;
     maxRetriesCount: number;
     simultaneousDownloadsCount: number;
+    noLogFile?: boolean;
     $schema?: string;
 }
 
 export interface BlobContext {
     ContainerName: string;
-}
-
-export interface ProgressTokens {
-    LastActionTitle: string;
-    LogLevel: string;
 }
 
 export type ContainerDownloadedBlobsResult = AsyncSessionResultDto<BlobService.BlobResult, BlobDownloadDto, BlobContext | undefined>;

@@ -1,5 +1,5 @@
 import * as Table from "cli-table2";
-import { BlobService, Logger } from "azure-storage";
+import { BlobService } from "azure-storage";
 import { CommandModule } from "yargs";
 import { EOL } from "os";
 
@@ -9,11 +9,10 @@ import {
     IsContainerNameValid,
     BlobsListTableConfig,
     ConstructStatisticsTableRow,
-    DefaultBlobResultGetter,
-    ConstructDefaultLogger,
-    ConstructLogLine
+    DefaultBlobResultGetter
 } from "../cli-helpers";
 import { CLIArgumentsObject } from "../cli-contracts";
+import { CLILogger, AddFileMessageHandler } from "../logger/cli-logger";
 import { StorageAccountManager } from "../../api/managers/storage-account/storage-account-manager";
 import { ContainerItemsList } from "../../api/managers/storage-account/storage-account-contracts";
 
@@ -25,13 +24,14 @@ class CheckWithAzureCommandClass implements CommandModule {
     public handler = async (options: CLIArgumentsObject): Promise<void> => {
         try {
             const configPath = ResolveConfigPath(options.config);
-            console.info(`Reading config from "${configPath}".`);
+            CLILogger.Info(`Reading config from "${configPath}".`);
             const config = ReadConfig(configPath);
-            const defaultLogger = ConstructDefaultLogger(config.logPath);
+
+            AddFileMessageHandler(config.logPath, config.noLogFile);
 
             try {
 
-                const storageAccountManager = new StorageAccountManager(config, defaultLogger, options.noCache);
+                const storageAccountManager = new StorageAccountManager(config, CLILogger, options.noCache);
                 await storageAccountManager.CheckServiceStatus();
 
                 if (IsContainerNameValid(options.container)) {
@@ -45,21 +45,21 @@ class CheckWithAzureCommandClass implements CommandModule {
                             DefaultBlobResultGetter
                         );
                         table.push(row);
-                        defaultLogger.notice(`Check statistics:${EOL}${table}`);
+                        CLILogger.Info(`Check statistics:${EOL}${table.toString()}`);
                     } else {
-                        defaultLogger.notice(`"${options.container}" has no missing blobs.`);
+                        CLILogger.Info(`"${options.container}" has no missing blobs.`);
                     }
                 } else {
                     const missingContainersBlobsList = await storageAccountManager.ValidateContainersFiles();
                     const tableTitle = "Missing blobs found:";
                     const outputString = this.constructMissingBlobsListsString(tableTitle, missingContainersBlobsList, options.showInBytes);
-                    defaultLogger.notice(outputString);
+                    CLILogger.Info(outputString);
                 }
             } catch (error) {
-                defaultLogger.emergency(`Failed to check correlation between data.${EOL}${error}`);
+                CLILogger.Critical(`Failed to check correlation between data.${EOL}${error}`);
             }
         } catch (configError) {
-            console.error(ConstructLogLine(Logger.LogLevels.CRITICAL, configError));
+            CLILogger.Critical(configError);
         }
     }
 
@@ -88,7 +88,7 @@ class CheckWithAzureCommandClass implements CommandModule {
         }
 
         if (hasMissingBlobs) {
-            return title + EOL + table;
+            return title + EOL + table.toString();
         } else {
             return "No missing blobs found.";
         }
