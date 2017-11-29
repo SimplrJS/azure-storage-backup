@@ -13,7 +13,11 @@ import {
 import { CLILogger, AddFileMessageHandler } from "../logger/cli-logger";
 import { StorageAccountManager } from "../../api/managers/storage-account/storage-account-manager";
 import { ContainersDownloadedBlobsResult } from "../../api/managers/storage-account/storage-account-contracts";
-
+/**
+ * CLI command `sync` class.
+ *
+ * Downloads all blobs that are missing in your file system.
+ */
 class SynchronizationCommandClass implements CommandModule {
     public command: string = "sync";
 

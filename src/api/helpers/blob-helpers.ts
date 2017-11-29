@@ -4,11 +4,16 @@ import { BlobService, common } from "azure-storage";
 import { Writable } from "stream";
 import { BlobDownloadDto, ServicePropertiesDto } from "../contracts/blob-helpers-contracts";
 import { LocalFileDto } from "../../cli/cli-contracts";
-
+/**
+ * Constructs host of Azure storage account.
+ */
 export function ConstructHost(storageAccount: string): string {
     return `https://${storageAccount}.blob.core.windows.net`;
 }
 
+/**
+ * Retrieves Azure Storage service properties.
+ */
 export async function GetServiceProperties(blobService: BlobService, options: common.RequestOptions = {}): Promise<ServicePropertiesDto> {
     return new Promise<ServicePropertiesDto>((resolve, reject) => {
         blobService.getServiceProperties(options, (error, result, response) => {
@@ -24,6 +29,9 @@ export async function GetServiceProperties(blobService: BlobService, options: co
     });
 }
 
+/**
+ * Retrieves containers list of an Azure Storage account.
+ */
 export async function GetContainersList(
     blobService: BlobService,
     continuationToken?: common.ContinuationToken,
@@ -44,6 +52,9 @@ export async function GetContainersList(
     });
 }
 
+/**
+ * Retrieves container's blobs list.
+ */
 export async function GetBlobsList(
     blobService: BlobService,
     containerName: string,
@@ -66,6 +77,9 @@ export async function GetBlobsList(
     });
 }
 
+/**
+ * Downloads blob to a file.
+ */
 export async function GetBlobToLocalFile(
     blobService: BlobService,
     containerName: string,
@@ -87,6 +101,9 @@ export async function GetBlobToLocalFile(
     });
 }
 
+/**
+ * Downloads blob to a stream.
+ */
 export async function GetBlobToStream(
     blobService: BlobService,
     containerName: string,
@@ -115,6 +132,12 @@ export async function GetBlobToStream(
     });
 }
 
+/**
+ * Filters in blobs that are missing in supplied list of LocalFileDto.
+ * If blob file in file system is different size, it counts as missing file.
+ *
+ * @returns List of fs.stats objects with paths.
+ */
 export function FilterMissingBlobsList(blobsList: BlobService.BlobResult[], localDownloadedList: LocalFileDto[]): BlobService.BlobResult[] {
     if (localDownloadedList.length <= 0) {
         return blobsList;
@@ -145,6 +168,12 @@ export function FilterMissingBlobsList(blobsList: BlobService.BlobResult[], loca
     return newItems;
 }
 
+/**
+ * Retrieves a local files list (fs.stats objects with paths) using glob patterns.
+ *
+ * @param containerSourcePath Path to container blobs.
+ * @returns Local files list (fs.stats objects with paths).
+ */
 export async function GetLocalFilesList(containerSourcePath: string, pattern: string[] = ["**/*"]): Promise<LocalFileDto[]> {
     const options: IOptions = {
         cwd: containerSourcePath,
@@ -155,6 +184,9 @@ export async function GetLocalFilesList(containerSourcePath: string, pattern: st
     return await fastGlob(pattern, options);
 }
 
+/**
+ * Retrieves directories list of source path using glob pattern.
+ */
 export async function GetLocalDirectoriesList(sourcePath: string, pattern: string[] = ["*"]): Promise<string[]> {
     const options: IOptions = {
         cwd: sourcePath,

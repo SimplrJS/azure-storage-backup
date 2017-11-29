@@ -1,30 +1,28 @@
 import * as Progress from "progress";
-import * as processTypesOnly from "process";
 import { MessageHandlerBase, LoggerHelpers, LogLevel, PrefixType } from "simplr-logger";
 
 export interface ProgressTokens {
     LastActionTitle: string;
     LogLevel: string;
 }
-
-export function IsServerSide(): boolean {
-    try {
-        // tslint:disable-next-line:no-require-imports no-unused-expression
-        require("process") as typeof processTypesOnly;
-        return true;
-    } catch {
-        return false;
-    }
-}
-
+/**
+ * Handles progress logging.
+ */
 export class ProgressLoggingHandler extends MessageHandlerBase {
     constructor(private progress?: Progress) {
         super();
-        this.isServerSide = IsServerSide();
+        this.isServerSide = LoggerHelpers.IsServerSide();
     }
 
     private isServerSide: boolean;
 
+    /**
+     * Handles a message in progress.
+     *
+     * @param level Message log level.
+     * @param timestamp Timestamp of logger (optional).
+     * @param messages Messages to log (optional).
+     */
     public HandleMessage(level: LogLevel, timestamp?: number, messages?: any[]): void {
         if (!this.isServerSide) {
             return;
@@ -40,28 +38,51 @@ export class ProgressLoggingHandler extends MessageHandlerBase {
         }
     }
 
+    /**
+     * Progress line format.
+     */
     public Format: string = "[:bar] :percent :current / :total :elapsed seconds elapsed. " +
         ":eta seconds left. (:logLevel) :lastActionTitle";
 
-    public Width: number = 20;
+    /**
+     * Width of progress bar.
+     */
+    public ProgressBarWidth: number = 20;
 
+    /**
+     * Sets progress instance.
+     */
     public set Progress(progress: Progress) {
         this.progress = progress;
     }
 
-    public NewProgress(total: number, format: string = this.Format, width: number = this.Width): Progress {
+    /**
+     * Creates a new progress.
+     *
+     * @param total Total count of ticks to complete.
+     * @param format Progress bar format. Default value defined in `ProgressLoggingHandler.Format`.
+     * @param progressBarWidth Progress bar width. Default value defined in `ProgressLoggingHandler.ProgressBarWidth`.
+     * @returns Progress instance.
+     */
+    public NewProgress(total: number, format: string = this.Format, progressBarWidth: number = this.ProgressBarWidth): Progress {
         this.progress = new Progress(format, {
             total: total,
-            width: width
+            width: progressBarWidth
         });
 
         return this.progress;
     }
 
+    /**
+     * Clears instance of current progress.
+     */
     public ClearProgress(): void {
         this.progress = undefined;
     }
 
+    /**
+     * Updates progress with one tick.
+     */
     public Tick(tokens?: ProgressTokens): void {
         if (this.progress != null) {
             this.progress.tick(tokens);

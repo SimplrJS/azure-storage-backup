@@ -58,7 +58,9 @@ export class StorageAccountManager {
     ];
     // #endregion Private variables
 
-    // #region Storage account actions
+    /**
+     * Checks current Azure storage account service status.
+     */
     public async CheckServiceStatus(): Promise<void> {
         try {
             this.logger.Info(`Checking service connectivity with storage account "${this.config.storageAccount}".`);
@@ -70,6 +72,9 @@ export class StorageAccountManager {
         }
     }
 
+    /**
+     * Retrieves containers list of current Azure storage account.
+     */
     public async FetchAllContainers(): Promise<BlobService.ContainerResult[]> {
         if (!this.noCache) {
             try {
@@ -100,6 +105,10 @@ export class StorageAccountManager {
     }
 
     // #region BlobsLists
+
+    /**
+     * Retrieves blobs list in all containers of current Azure storage account.
+     */
     public async FetchContainersBlobsList(): Promise<AsyncSessionResultDto<BlobService.ContainerResult, BlobService.BlobResult[]>> {
         try {
             const containersList = await this.FetchAllContainers();
@@ -128,6 +137,11 @@ export class StorageAccountManager {
         }
     }
 
+    /**
+     * Retrieves blobs list of a container.
+     *
+     * @param {string} containerName Container in your current Azure storage account.
+     */
     public async FetchContainerBlobsList(containerName: string): Promise<BlobService.BlobResult[]> {
         let blobsList: BlobService.BlobResult[] | undefined;
         // Searching for container's blob list in cache
@@ -161,6 +175,10 @@ export class StorageAccountManager {
     // #endregion Blobs Lists
 
     // #region Files validation
+
+    /**
+     * Retrieves missing Azure storage account container files in local system.
+     */
     public async ValidateContainerFiles(containerName: string, clearCache: boolean = false): Promise<BlobService.BlobResult[]> {
         this.logger.Debug(`Validating "${containerName}" downloaded files with blobs list.`);
 
@@ -218,6 +236,9 @@ export class StorageAccountManager {
         return downloadsList;
     }
 
+    /**
+     * Retrieves list of all missing Azure storage account files in local system.
+     */
     public async ValidateContainersFiles(): Promise<Array<ContainerItemsList<BlobService.BlobResult>>> {
         // Get blob container list, and check one by one.
         const containers = await this.FetchAllContainers();
@@ -244,6 +265,9 @@ export class StorageAccountManager {
     // #endregion Files validation
 
     // #region Blobs download
+    /**
+     * Downloads container blobs that are missing in file system.
+     */
     public async DownloadContainerBlobs(containerName: string): Promise<ContainerDownloadedBlobsResult | undefined> {
         const downloadsList = await this.ValidateContainerFiles(containerName, true);
 
@@ -278,6 +302,9 @@ export class StorageAccountManager {
         return results;
     }
 
+    /**
+     * Downloads all missing blobs that are missing in file system.
+     */
     public async DownloadContainersBlobs(): Promise<ContainersDownloadedBlobsResult> {
         // Get blob container list, and check one by one.
         const containers = await this.FetchAllContainers();
@@ -350,11 +377,17 @@ export class StorageAccountManager {
         this.logger.Debug(`${entries.length} "${containerName}" missing blobs list entries. Successfully cached.`);
     }
 
+    /**
+     * Get containers blobs lists from cache.
+     */
     public async GetContainerCachedBlobsList(containerName: string): Promise<BlobsList> {
         const blobsListPath = this.GetContainerBlobsListPath(containerName);
         return await fs.readJSON(blobsListPath) as BlobsList;
     }
 
+    /**
+     * Gets containers list from cache.
+     */
     public async GetCachedContainersList(): Promise<ContainersList> {
         const containersListPath = this.ContainersListPath;
         return await fs.readJSON(containersListPath) as ContainersList;
@@ -365,28 +398,48 @@ export class StorageAccountManager {
     // #region Paths
 
     // #region Temporary data paths
+
+    /**
+     * Generates directory path of Storage account temporary data.
+     */
     public get StorageAccountTempPath(): string {
         return path.join(tmpdir(), PACKAGE_JSON.name, this.config.storageAccount);
     }
 
+    /**
+     * Generates containers list temporary JSON path.
+     */
     public get ContainersListPath(): string {
         return path.join(this.StorageAccountTempPath, "containers.json");
     }
 
+    /**
+     * Generates container blobs list temporary JSON path.
+     */
     public GetContainerBlobsListPath(containerName: string): string {
         return path.join(this.StorageAccountTempPath, containerName, "blobs-list.json");
     }
 
+    /**
+     * Generates container downloads list temporary JSON path.
+     */
     public GetContainerDownloadsListPath(containerName: string): string {
         return path.join(this.StorageAccountTempPath, containerName, "downloads-list.json");
     }
     // #endregion Temporary data paths
 
     // #region Data output paths
+
+    /**
+     * Retrieves container downloads destination path.
+     */
     public GetContainerDownloadsDestinationPath(containerName: string): string {
         return path.join(this.config.outDir, this.config.storageAccount, containerName);
     }
 
+    /**
+     * Retrieves downloaded blob destination path.
+     */
     public GetContainerBlobDownloadPath(containerName: string, blobName: string): string {
         return path.join(this.GetContainerDownloadsDestinationPath(containerName), blobName);
     }

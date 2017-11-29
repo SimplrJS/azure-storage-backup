@@ -19,7 +19,11 @@ import { PromiseDto } from "../../api/promises/async-manager";
 export interface StatisticsCommandOptions extends CLIArgumentsObject {
     showInBytes: boolean;
 }
-
+/**
+ * CLI command `stats` class.
+ *
+ * Provides a statistics about blobs in Azure Storage account containers.
+ */
 class StatisticsCommandClass implements CommandModule {
     public command: string = "stats";
 

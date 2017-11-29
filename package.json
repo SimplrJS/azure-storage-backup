@@ -1,7 +1,8 @@
 {
-  "name": "backend-azure-blob-exporter",
+  "name": "@simplr/azure-storage-backup",
   "version": "0.1.0",
-  "description": "Exports blobs from azure backend.",
+  "description": "CLI tool to backup Azure storage account to file system.",
+  "homepage": "https://github.com/SimplrJS/azure-storage-backup",
   "main": "index.js",
   "scripts": {
     "build": "tsc -p .",
@@ -13,19 +14,22 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://quatrodev.visualstudio.com/DefaultCollection/Copictures%20Platform/_git/Backend.AzureBlobExporter"
+    "url": "https://github.com/SimplrJS/azure-storage-backup"
   },
   "keywords": [
     "backend",
     "azure",
     "blob",
-    "exporter"
+    "exporter",
+    "download",
+    "storage",
+    "azure-storage"
   ],
-  "author": "QuatroDev (www.quatrodev.com)",
+  "author": "simplrjs <simplr@quatrodev.com> (https://github.com/simplrjs)",
   "license": "ISC",
   "engine": "node >= 5.0.0",
   "bin": {
-    "azure-blob-exporter": "./dist/cli/cli.js"
+    "azure-storage-backup": "./dist/cli/cli.js"
   },
   "files": [
     "dist",
@@ -55,7 +59,7 @@
     "fs-extra": "^4.0.2",
     "inquirer": "^3.3.0",
     "progress": "^2.0.0",
-    "simplr-logger": "^1.0.0-beta.6",
+    "simplr-logger": "^1.0.0",
     "yargs": "^10.0.3"
   }
 }

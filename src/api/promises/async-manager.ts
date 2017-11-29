@@ -29,30 +29,51 @@ export class AsyncManager<TData, TResult = void, TContext = void> {
         private throwOnError: boolean = false
     ) { }
 
+    /**
+     * Total count of objects supplied to manager.
+     */
     public get TotalCount(): number {
         return this.promisesData.length;
     }
 
+    /**
+     * Succeeded promises count.
+     */
     public get SucceededCount(): number {
         return this.succeededPromiseIndexes.length;
     }
 
+    /**
+     * Failed promises count.
+     */
     public get FailedCount(): number {
         return this.failedPromiseIndexes.length;
     }
 
+    /**
+     * Finished promises count.
+     */
     public get FinishedCount(): number {
         return this.SucceededCount + this.FailedCount;
     }
 
+    /**
+     * Failed promises objects list.
+     */
     public get FailedPromises(): Array<PromiseDto<TData, undefined>> {
         return this.failedPromiseIndexes.map(index => this.promisesData[index]) as Array<PromiseDto<TData, undefined>>;
     }
 
+    /**
+     * Succeeded promises objects list.
+     */
     public get SucceededPromises(): Array<PromiseDto<TData, TResult>> {
         return this.succeededPromiseIndexes.map(index => this.promisesData[index]) as Array<PromiseDto<TData, TResult>>;
     }
 
+    /**
+     * Callback triggered after single promise finished.
+     */
     public set OnSinglePromiseFinished(notifier: PromiseNotifier) {
         this.onSinglePromiseFinished = notifier;
     }
@@ -76,20 +97,32 @@ export class AsyncManager<TData, TResult = void, TContext = void> {
     private isStarted: boolean = false;
     private hasFailed: boolean = false;
 
+    /**
+     * Is manager started resolving promises.
+     */
     public get IsStarted(): boolean {
         return this.isStarted;
     }
 
+    /**
+     * Has manager failed to resolve promises.
+     */
     public get HasFailed(): boolean {
         return this.hasFailed;
     }
 
     private context: TContext | undefined;
 
+    /**
+     * Sets context object, that will be available in promise function.
+     */
     public set Context(contextValue: TContext | undefined) {
         this.context = contextValue;
     }
 
+    /**
+     * Retrieves context object.
+     */
     public get Context(): TContext | undefined {
         return this.context;
     }
@@ -105,6 +138,9 @@ export class AsyncManager<TData, TResult = void, TContext = void> {
         this.promisesData = [];
     }
 
+    /**
+     * Creates async function for every object supplied in promisesDate.
+     */
     public async Start(promisesData: TData[], context?: TContext): Promise<AsyncSessionResultDto<TData, TResult, TContext>> {
         if (this.isStarted) {
             throw new Error(`Cannot start AsyncManager in the middle of process.`);

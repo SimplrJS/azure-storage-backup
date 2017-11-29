@@ -11,10 +11,20 @@ export class BlobManager extends BaseManager<BlobService.BlobResult> {
         super(blobService, options);
     }
 
+    /**
+     * Retrieves next portion of blobs using current continuationToken.
+     *
+     * Returns next portion of blobs.
+     *
+     * Appends BlobManager.Entries with fetched blobs.
+     */
     public async Next(): Promise<BlobService.BlobResult[]> {
         return this.getBlobsList();
     }
 
+    /**
+     * Retrieves container name of blobs that are fetched.
+     */
     public get ContainerName(): string {
         return this.containerName;
     }

@@ -2,7 +2,7 @@
     "title": "Configuration file of Azure blob exporter.",
     "definitions": {},
     "$schema": "http://json-schema.org/draft-04/schema#",
-    "$id": "./schema.extractor.config.json",
+    "$id": "./schema.backup.config.json",
     "type": "object",
     "properties": {
         "storageAccount": {
@@ -20,7 +20,7 @@
         "storageHost": {
             "$id": "/properties/storageHost",
             "type": "string",
-            "title": "Storage host."
+            "title": "Azure storage account host."
         },
         "outDir": {
             "$id": "/properties/outDir",
@@ -48,6 +48,13 @@
             "title": "Simultaneous downloads count.",
             "description": "Count of concurrently performed blob downloads of a container.",
             "default": 5
+        },
+        "noLogFile": {
+            "$id": "/properties/noLogFile",
+            "type": "boolean",
+            "title": "No log file",
+            "description": "Prevents to logging CLI activities to a log file.",
+            "default": false
         }
     },
     "required": [

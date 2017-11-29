@@ -8,6 +8,9 @@ import { ConfigInitializationCommand } from "./commands-modules/init";
 import { CLIArgumentsObject } from "./cli-contracts";
 import { GetVersion } from "./cli-helpers";
 
+/**
+ * Handles all CLI commands and arguments.
+ */
 export const CLIHandler = yargs
     .showHelpOnFail(true)
     .demandCommand(1, "You need at least one command before moving on")
@@ -17,7 +20,7 @@ export const CLIHandler = yargs
     .alias("v", "version")
     // CLI options
     .option("config", {
-        describe: "Relative path from current working directory to config file.",
+        describe: "Config file path.",
         type: "string"
     })
     .option("container", {
@@ -27,10 +30,6 @@ export const CLIHandler = yargs
     .option("noCache", {
         describe: "Prevents using cached values from previously performed actions.",
         type: "boolean"
-    })
-    .option("logPath", {
-        describe: "Relative path from current working directory to log file.",
-        type: "string"
     })
 
     // CLI commands:

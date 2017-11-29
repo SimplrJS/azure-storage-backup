@@ -16,10 +16,15 @@ export interface AzureStorageAnswersDto extends ConfigData {
     configPath: string;
 }
 
+/**
+ * CLI command `init` class.
+ *
+ * Generates a configuration file.
+ */
 class ConfigInitializationCommandClass implements CommandModule {
     public command: string = "init";
 
-    public describe: string = "Run configuration prompts.";
+    public describe: string = "Generates a configuration file.";
 
     private requireNotEmpty = (value: string): boolean | string => {
         if (value.trim().length !== 0) {
