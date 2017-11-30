@@ -1,11 +1,11 @@
-# @simplr/azure-storage-backup
+# @simplrjs/azure-storage-backup
 
 CLI tool to backup Azure storage account to file system.
 
 ## Get started
 
 ```sh
-npm install @simplr/azure-storage-backup -g
+npm install @simplrjs/azure-storage-backup -g
 ```
 
 ## Features
