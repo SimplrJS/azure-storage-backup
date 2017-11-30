@@ -1,0 +1,6 @@
+{
+  "extends": "simplr-tslint",
+  "no-duplicate-imports": true,
+  "prefer-method-signature": true,
+  "no-unnecessary-type-assertion": true
+}

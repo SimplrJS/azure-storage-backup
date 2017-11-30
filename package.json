@@ -1,21 +1,65 @@
 {
-  "name": "backend-azure-blob-exporter",
+  "name": "@simplr/azure-storage-backup",
   "version": "0.1.0",
-  "description": "Exports blobs from azure backend.",
+  "description": "CLI tool to backup Azure storage account to file system.",
+  "homepage": "https://github.com/SimplrJS/azure-storage-backup",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "tsc -p .",
+    "tslint": "tslint --project . --config ./tslint.json",
+    "watch": "tsc -w",
+    "copy-json": "cpx ./src/*.json ./dist/",
+    "test": "tsc -p . --noEmit && npm run tslint",
+    "release": "npm run build && npm run tslint && npm run copy-json"
   },
   "repository": {
     "type": "git",
-    "url": "https://quatrodev.visualstudio.com/DefaultCollection/Copictures%20Platform/_git/Backend.AzureBlobExporter"
+    "url": "https://github.com/SimplrJS/azure-storage-backup"
   },
   "keywords": [
     "backend",
     "azure",
     "blob",
-    "exporter"
+    "exporter",
+    "download",
+    "storage",
+    "azure-storage"
   ],
-  "author": "QuatroDev (www.quatrodev.com)",
-  "license": "ISC"
+  "author": "simplrjs <simplr@quatrodev.com> (https://github.com/simplrjs)",
+  "license": "ISC",
+  "engine": "node >= 5.0.0",
+  "bin": {
+    "azure-storage-backup": "./dist/cli/cli.js"
+  },
+  "files": [
+    "dist",
+    "@types",
+    "*.MD",
+    "*.js",
+    "*.d.ts"
+  ],
+  "devDependencies": {
+    "cpx": "^1.5.0",
+    "simplr-tslint": "0.0.1",
+    "tslint": "^5.7.0",
+    "typescript": "^2.6.1"
+  },
+  "dependencies": {
+    "@types/cli-table2": "^0.2.1",
+    "@types/filesize": "^3.2.15",
+    "@types/fs-extra": "^4.0.2",
+    "@types/inquirer": "0.0.35",
+    "@types/node": "^8.0.34",
+    "@types/progress": "^2.0.0",
+    "@types/yargs": "^8.0.2",
+    "azure-storage": "^2.6.0",
+    "cli-table2": "^0.2.0",
+    "fast-glob": "^1.0.1",
+    "filesize": "^3.5.11",
+    "fs-extra": "^4.0.2",
+    "inquirer": "^3.3.0",
+    "progress": "^2.0.0",
+    "simplr-logger": "^1.0.0",
+    "yargs": "^10.0.3"
+  }
 }
