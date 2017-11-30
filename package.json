@@ -1,6 +1,6 @@
 {
   "name": "@simplrjs/azure-storage-backup",
-  "version": "0.1.0-beta.1",
+  "version": "0.1.0-beta.2",
   "description": "CLI tool to backup Azure storage account to file system.",
   "homepage": "https://github.com/SimplrJS/azure-storage-backup",
   "main": "dist/index.js",
