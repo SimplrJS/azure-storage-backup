@@ -8,8 +8,7 @@ export { BlobManager } from "./api/managers/blob-manager";
 export { ContainerManager } from "./api/managers/container-manager";
 export * from "./api/promises/async-manager";
 
-// CLI modules
-export { CLIHandler } from "./cli/cli";
+// CLI
 export * from "./cli/cli-helpers";
 export * from "./cli/cli-contracts";
 

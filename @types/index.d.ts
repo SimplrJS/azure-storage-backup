@@ -6,7 +6,6 @@ export * from "./api/managers/storage-account/storage-account-contracts";
 export { BlobManager } from "./api/managers/blob-manager";
 export { ContainerManager } from "./api/managers/container-manager";
 export * from "./api/promises/async-manager";
-export { CLIHandler } from "./cli/cli";
 export * from "./cli/cli-helpers";
 export * from "./cli/cli-contracts";
 export * from "./cli/commands-modules/init";
