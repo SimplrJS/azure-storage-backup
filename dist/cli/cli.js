@@ -1,0 +1,37 @@
+#!/usr/bin/env node
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+var yargs = require("yargs");
+var stats_1 = require("./commands-modules/stats");
+var sync_1 = require("./commands-modules/sync");
+var check_1 = require("./commands-modules/check");
+var init_1 = require("./commands-modules/init");
+var cli_helpers_1 = require("./cli-helpers");
+/**
+ * Handles all CLI commands and arguments.
+ */
+exports.CLIHandler = yargs
+    .showHelpOnFail(true)
+    .demandCommand(1, "You need at least one command before moving on")
+    .help("h", "Show help")
+    .alias("h", "help")
+    .version("Current version: " + cli_helpers_1.GetVersion())
+    .alias("v", "version")
+    .option("config", {
+    describe: "Config file path.",
+    type: "string"
+})
+    .option("container", {
+    describe: "Performs an action on a specific container instead of all Azure storage account.",
+    type: "string"
+})
+    .option("noCache", {
+    describe: "Prevents using cached values from previously performed actions.",
+    type: "boolean"
+})
+    .command(sync_1.SynchronizationCommand)
+    .command(check_1.CheckWithAzureCommand)
+    .command(stats_1.StatisticsCommand)
+    .command(init_1.ConfigInitializationCommand)
+    .argv;
+//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJmaWxlIjoiY2xpLmpzIiwic291cmNlUm9vdCI6IiIsInNvdXJjZXMiOlsiLi4vLi4vc3JjL2NsaS9jbGkudHMiXSwibmFtZXMiOltdLCJtYXBwaW5ncyI6Ijs7O0FBQ0EsNkJBQStCO0FBRS9CLGtEQUE2RDtBQUM3RCxnREFBaUU7QUFDakUsa0RBQWlFO0FBQ2pFLGdEQUFzRTtBQUV0RSw2Q0FBMkM7QUFFM0M7O0dBRUc7QUFDVSxRQUFBLFVBQVUsR0FBRyxLQUFLO0tBQzFCLGNBQWMsQ0FBQyxJQUFJLENBQUM7S0FDcEIsYUFBYSxDQUFDLENBQUMsRUFBRSxnREFBZ0QsQ0FBQztLQUNsRSxJQUFJLENBQUMsR0FBRyxFQUFFLFdBQVcsQ0FBQztLQUN0QixLQUFLLENBQUMsR0FBRyxFQUFFLE1BQU0sQ0FBQztLQUNsQixPQUFPLENBQUMsc0JBQW9CLHdCQUFVLEVBQUksQ0FBQztLQUMzQyxLQUFLLENBQUMsR0FBRyxFQUFFLFNBQVMsQ0FBQztLQUVyQixNQUFNLENBQUMsUUFBUSxFQUFFO0lBQ2QsUUFBUSxFQUFFLG1CQUFtQjtJQUM3QixJQUFJLEVBQUUsUUFBUTtDQUNqQixDQUFDO0tBQ0QsTUFBTSxDQUFDLFdBQVcsRUFBRTtJQUNqQixRQUFRLEVBQUUsa0ZBQWtGO0lBQzVGLElBQUksRUFBRSxRQUFRO0NBQ2pCLENBQUM7S0FDRCxNQUFNLENBQUMsU0FBUyxFQUFFO0lBQ2YsUUFBUSxFQUFFLGlFQUFpRTtJQUMzRSxJQUFJLEVBQUUsU0FBUztDQUNsQixDQUFDO0tBR0QsT0FBTyxDQUFDLDZCQUFzQixDQUFDO0tBQy9CLE9BQU8sQ0FBQyw2QkFBcUIsQ0FBQztLQUM5QixPQUFPLENBQUMseUJBQWlCLENBQUM7S0FDMUIsT0FBTyxDQUFDLGtDQUEyQixDQUFDO0tBQ3BDLElBQTBCLENBQUMiLCJzb3VyY2VzQ29udGVudCI6WyIjIS91c3IvYmluL2VudiBub2RlXHJcbmltcG9ydCAqIGFzIHlhcmdzIGZyb20gXCJ5YXJnc1wiO1xyXG5cclxuaW1wb3J0IHsgU3RhdGlzdGljc0NvbW1hbmQgfSBmcm9tIFwiLi9jb21tYW5kcy1tb2R1bGVzL3N0YXRzXCI7XHJcbmltcG9ydCB7IFN5bmNocm9uaXphdGlvbkNvbW1hbmQgfSBmcm9tIFwiLi9jb21tYW5kcy1tb2R1bGVzL3N5bmNcIjtcclxuaW1wb3J0IHsgQ2hlY2tXaXRoQXp1cmVDb21tYW5kIH0gZnJvbSBcIi4vY29tbWFuZHMtbW9kdWxlcy9jaGVja1wiO1xyXG5pbXBvcnQgeyBDb25maWdJbml0aWFsaXphdGlvbkNvbW1hbmQgfSBmcm9tIFwiLi9jb21tYW5kcy1tb2R1bGVzL2luaXRcIjtcclxuaW1wb3J0IHsgQ0xJQXJndW1lbnRzT2JqZWN0IH0gZnJvbSBcIi4vY2xpLWNvbnRyYWN0c1wiO1xyXG5pbXBvcnQgeyBHZXRWZXJzaW9uIH0gZnJvbSBcIi4vY2xpLWhlbHBlcnNcIjtcclxuXHJcbi8qKlxyXG4gKiBIYW5kbGVzIGFsbCBDTEkgY29tbWFuZHMgYW5kIGFyZ3VtZW50cy5cclxuICovXHJcbmV4cG9ydCBjb25zdCBDTElIYW5kbGVyID0geWFyZ3NcclxuICAgIC5zaG93SGVscE9uRmFpbCh0cnVlKVxyXG4gICAgLmRlbWFuZENvbW1hbmQoMSwgXCJZb3UgbmVlZCBhdCBsZWFzdCBvbmUgY29tbWFuZCBiZWZvcmUgbW92aW5nIG9uXCIpXHJcbiAgICAuaGVscChcImhcIiwgXCJTaG93IGhlbHBcIilcclxuICAgIC5hbGlhcyhcImhcIiwgXCJoZWxwXCIpXHJcbiAgICAudmVyc2lvbihgQ3VycmVudCB2ZXJzaW9uOiAke0dldFZlcnNpb24oKX1gKVxyXG4gICAgLmFsaWFzKFwidlwiLCBcInZlcnNpb25cIilcclxuICAgIC8vIENMSSBvcHRpb25zXHJcbiAgICAub3B0aW9uKFwiY29uZmlnXCIsIHtcclxuICAgICAgICBkZXNjcmliZTogXCJDb25maWcgZmlsZSBwYXRoLlwiLFxyXG4gICAgICAgIHR5cGU6IFwic3RyaW5nXCJcclxuICAgIH0pXHJcbiAgICAub3B0aW9uKFwiY29udGFpbmVyXCIsIHtcclxuICAgICAgICBkZXNjcmliZTogXCJQZXJmb3JtcyBhbiBhY3Rpb24gb24gYSBzcGVjaWZpYyBjb250YWluZXIgaW5zdGVhZCBvZiBhbGwgQXp1cmUgc3RvcmFnZSBhY2NvdW50LlwiLFxyXG4gICAgICAgIHR5cGU6IFwic3RyaW5nXCJcclxuICAgIH0pXHJcbiAgICAub3B0aW9uKFwibm9DYWNoZVwiLCB7XHJcbiAgICAgICAgZGVzY3JpYmU6IFwiUHJldmVudHMgdXNpbmcgY2FjaGVkIHZhbHVlcyBmcm9tIHByZXZpb3VzbHkgcGVyZm9ybWVkIGFjdGlvbnMuXCIsXHJcbiAgICAgICAgdHlwZTogXCJib29sZWFuXCJcclxuICAgIH0pXHJcblxyXG4gICAgLy8gQ0xJIGNvbW1hbmRzOlxyXG4gICAgLmNvbW1hbmQoU3luY2hyb25pemF0aW9uQ29tbWFuZClcclxuICAgIC5jb21tYW5kKENoZWNrV2l0aEF6dXJlQ29tbWFuZClcclxuICAgIC5jb21tYW5kKFN0YXRpc3RpY3NDb21tYW5kKVxyXG4gICAgLmNvbW1hbmQoQ29uZmlnSW5pdGlhbGl6YXRpb25Db21tYW5kKVxyXG4gICAgLmFyZ3YgYXMgQ0xJQXJndW1lbnRzT2JqZWN0O1xyXG4iXX0=
