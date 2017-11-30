@@ -21,7 +21,7 @@ export interface AzureStorageAnswersDto extends ConfigData {
  *
  * Generates a configuration file.
  */
-class ConfigInitializationCommandClass implements CommandModule {
+export class ConfigInitializationCommandClass implements CommandModule {
     public command: string = "init";
 
     public describe: string = "Generates a configuration file.";

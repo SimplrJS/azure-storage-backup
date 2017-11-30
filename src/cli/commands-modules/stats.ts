@@ -24,7 +24,7 @@ export interface StatisticsCommandOptions extends CLIArgumentsObject {
  *
  * Provides a statistics about blobs in Azure Storage account containers.
  */
-class StatisticsCommandClass implements CommandModule {
+export class StatisticsCommandClass implements CommandModule {
     public command: string = "stats";
 
     public describe: string = "Retrieves statistics of a Storage account or a container.";

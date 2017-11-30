@@ -15,12 +15,13 @@ import { CLIArgumentsObject } from "../cli-contracts";
 import { CLILogger, AddFileMessageHandler } from "../logger/cli-logger";
 import { StorageAccountManager } from "../../api/managers/storage-account/storage-account-manager";
 import { ContainerItemsList } from "../../api/managers/storage-account/storage-account-contracts";
+
 /**
  * CLI command `check` class.
  *
  * Checks if all blobs from Azure Storage were downloaded to your file system.
  */
-class CheckWithAzureCommandClass implements CommandModule {
+export class CheckWithAzureCommandClass implements CommandModule {
     public command: string = "check";
 
     public describe: string = "Checks correlation between data in Azure storage account and data in your outDir.";
